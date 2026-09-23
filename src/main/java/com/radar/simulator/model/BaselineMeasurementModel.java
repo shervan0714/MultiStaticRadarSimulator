@@ -37,10 +37,9 @@ public class BaselineMeasurementModel implements MeasurementModel {
             double bistaticRange = distTxTarget + distTargetRx;
             double timeDelay = bistaticRange / SPEED_OF_LIGHT;
             
-            // Calculate a simplified received power for now using placeholder logic
-            // Assuming power is simply proportional to inverse square of distance for now
-            // To be replaced with actual radar equation
-            double power = transmitter.getPower() / (bistaticRange * bistaticRange);
+            // Calculate received power using the physics model
+            com.radar.simulator.core.Drone tempDrone = new com.radar.simulator.core.Drone("temp", targetPosition, new Vector3D(0,0,0));
+            double power = RadarPhysics.calculateReceivedPower(transmitter, tempDrone, receiver);
 
             Map<Quantity, Double> values = new HashMap<>();
             values.put(Quantity.BISTATIC_RANGE, bistaticRange);

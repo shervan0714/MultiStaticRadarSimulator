@@ -46,8 +46,20 @@ public class BaselineLocalizationModel implements LocalizationModel {
 
         estimatedPosition = estimatedPosition.scale(1.0 / totalWeight);
 
-        // Calculate a simple residual (sum of squared errors from expected ranges) - placeholder
+        // Calculate a simple residual (sum of squared errors from expected ranges)
         double residual = 0.0; 
+        for (ReceiverMeasurement rm : measurement.perReceiver()) {
+            if (rm.receiverId() >= 0 && rm.receiverId() < receivers.size()) {
+                Receiver rx = receivers.get(rm.receiverId());
+                Double measuredRange = rm.values().get(Quantity.BISTATIC_RANGE);
+                if (measuredRange != null) {
+                    double distTx = transmitter.getPosition().distance(estimatedPosition);
+                    double distRx = rx.getPosition().distance(estimatedPosition);
+                    double expectedRange = distTx + distRx;
+                    residual += Math.pow(measuredRange - expectedRange, 2);
+                }
+            }
+        }
 
         return new EstimationResult(estimatedPosition, Status.SUCCESS, residual, 1.0);
     }
