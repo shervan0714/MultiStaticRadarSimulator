@@ -44,57 +44,107 @@
 ## Week 2: Sep 13 - Sep 19, 2026
 
 ### Work Completed
-(To be filled in)
+- Implemented scenario and trajectory modules (Scenario, TrajectoryModel, ConstantVelocityTrajectory)
+- Defined measurement and localization interfaces (MeasurementModel, LocalizationModel)
+- Created data model records: Measurement, ReceiverMeasurement, Quantity, ModelDescriptor, EstimationResult, Status
+- Implemented configurable transmitter/receiver geometry and orientation support
+- Established constant-velocity target motion with analytical position verification
 
 ### Contributions
-(To be filled in)
+- ✓ Completed Phase 3 Design 1.3: Scenario and Trajectory modules
+- ✓ Completed Phase 3 Design 1.4: Measurement and Localization interfaces
+- ✓ Pushed all interface definitions and data models to GitHub
 
 ### Hours Spent
-- **Total: ____ hours**
+- Interface design & implementation: 5 hours
+- Scenario and trajectory modules: 3 hours
+- **Total: 8 hours**
 
 ### Next Week's Plan
-(To be filled in)
+- Implement baseline measurement and localization formulations
+- Build ExperimentRunner and EvaluationModule
+- Create geometry validation for under-constrained configurations
+- Begin comprehensive unit testing
 
 ### Blockers / Notes
-(To be filled in)
+- Stakeholder formulation not yet available; using hand-verifiable baseline
+- Decided to keep interfaces simple and version-labelled per design doc
 
 ---
 
 ## Week 3: Sep 20 - Sep 26, 2026
 
 ### Work Completed
-(To be filled in)
+- Implemented BaselineMeasurementModel: bistatic range, time delay, and received power calculation
+- Implemented BaselineLocalizationModel: power-weighted triangulation with residual computation
+- Created ExperimentRunner: full pipeline orchestration (config → trajectory → measurement → localization → evaluation)
+- Created EvaluationModule: computes mean, max, and RMS error from experiment records
+- Created ExperimentRecord: immutable per-step data capture for reproducibility
+- Implemented GeometryValidator: detects under-constrained, collinear, and poorly-conditioned receiver geometry
+- Created ScenarioPersistence: scenario save/load (Properties format) and CSV results export
+- Added comprehensive unit tests for trajectory, measurement, localization, evaluation, geometry validation, and experiment runner
 
 ### Contributions
-(To be filled in)
+- ✓ Completed 25 Sep milestone: one baseline measurement/localization formulation validated
+- ✓ Integrated experiment runner and evaluation module
+- ✓ Added explicit handling of invalid and under-constrained geometry
+- ✓ Added 35+ new unit tests across 7 test classes
 
 ### Hours Spent
-- **Total: ____ hours**
+- Measurement/localization implementation: 4 hours
+- ExperimentRunner & EvaluationModule: 3 hours
+- GeometryValidator & persistence: 3 hours
+- Unit tests: 3 hours
+- **Total: 13 hours**
 
 ### Next Week's Plan
-(To be filled in)
+- Complete regression testing across different receiver counts and geometries
+- Add persistence round-trip validation
+- Upgrade CLI and UI to use ExperimentRunner pipeline
+- Update SimulatorController with live error statistics
 
 ### Blockers / Notes
-(To be filled in)
+- Baseline localization uses simple power-weighted averaging; will need replacement with proper algorithm when stakeholder formula is available
+- The replaceable interface pattern is working well — can swap models without touching other modules
 
 ---
 
 ## Week 4: Sep 27 - Oct 3, 2026
 
 ### Work Completed
-(To be filled in)
+- Complete regression test suite: validated scenarios across 3, 4, and 5 receiver configurations
+- Tested well-conditioned geometries (triangle, square, wide baseline, close-range) and difficult geometries (collinear, under-constrained)
+- Persistence round-trip tests: save → load → verify all fields preserved, loaded scenario produces identical results
+- CSV export verification tests
+- Rewrote CLISimulatorApp to use full ExperimentRunner pipeline with geometry validation, evaluation summary, and CSV export support
+- Rewrote SimulatorController to use modular MeasurementModel/LocalizationModel pipeline with live aggregate error statistics (mean/max/RMS)
+- Added ReceiverTest class (was previously missing from test suite)
+- Model identity and evaluation data recorded in every experiment record
 
 ### Contributions
-(To be filled in)
+- ✓ Completed 2 Oct milestone: regression testing, persistence, and reference-case validation
+- ✓ 10 regression/reference-case tests covering varied receiver counts and geometries
+- ✓ CLI now supports --save, --load, --export, --receivers, --duration, --timestep
+- ✓ SimulatorController now shows live error statistics and validates geometry before start
+- ✓ Total test count: 50+ unit tests across 11 test classes
 
 ### Hours Spent
-- **Total: ____ hours**
+- Regression test suite: 3 hours
+- Persistence tests: 2 hours
+- CLI rewrite with ExperimentRunner pipeline: 2 hours
+- SimulatorController rewrite: 2 hours
+- ReceiverTest and cleanup: 1 hour
+- **Total: 10 hours**
 
 ### Next Week's Plan
-(To be filled in)
+- Mid-demo preparation (Oct 9): demonstrate full end-to-end workflow
+- Polish visualization to show trajectory trails
+- Prepare stakeholder demo scenario
+- Review and document known gaps honestly
 
 ### Blockers / Notes
-(To be filled in)
+- Localization accuracy is limited by the baseline power-weighted averaging algorithm — known gap, will be declared in mid-demo gap list
+- Persistence uses Java Properties format; may switch to JSON with Jackson if stakeholder needs more structured export
 
 ---
 
