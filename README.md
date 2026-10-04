@@ -21,7 +21,7 @@ This simulator allows researchers to:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/MultiStaticRadarSimulator.git
+git clone https://github.com/sherv/MultiStaticRadarSimulator.git
 cd MultiStaticRadarSimulator
 
 # Build the project
@@ -122,8 +122,8 @@ MultiStaticRadarSimulator/
 
 This is a solo student project for CS5013 (Programming with AI) at IIT Madras.
 
-**Student**: Your Name  
-**Roll No**: Your Roll  
+**Student**: Shervin  
+**Roll No**: 12345678  
 **Stakeholder**: Girdhar sir (Research)  
 **Course**: CS5013, IIT Madras  
 

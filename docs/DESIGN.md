@@ -1,8 +1,8 @@
 # Design Document: Multi-Static Radar Simulator
 
 **Project**: Multi-Static Radar Simulator  
-**Student**: [Your Name]  
-**Roll No**: [Your Roll]  
+**Student**: Shervin  
+**Roll No**: 12345678  
 **Stakeholder**: Girdhar sir (Radar Research Lab)  
 **Date**: September 6, 2026  
 **Course**: CS5013 - Programming with AI, IIT Madras  
@@ -177,7 +177,7 @@ public class Drone {
 
 ## 3. Module Ownership
 
-**Solo project** - All modules owned by: [Your Name]
+**Solo project** - All modules owned by: Shervin
 
 | Module | Owner | Status |
 |--------|-------|--------|
@@ -373,6 +373,6 @@ Week 10 (Nov 6):      Final submission [FINAL DEMO: NOV 6]
 
 ---
 
-**Design Document Author**: [Your Name]  
+**Design Document Author**: Shervin  
 **Last Updated**: September 6, 2026  
 **Status**: Ready for submission

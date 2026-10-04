@@ -29,6 +29,9 @@ public class Visualization3D {
     private Sphere calculatedDroneSphere;
     private List<Line> signalLines;
     
+    private List<Sphere> trailSpheres;
+    private Vector3D lastTrailPos;
+    
     private Transmitter transmitter;
     private List<Receiver> receivers;
     private Drone drone;
@@ -41,6 +44,7 @@ public class Visualization3D {
         root3D = new Group();
         receiverSpheres = new ArrayList<>();
         signalLines = new ArrayList<>();
+        trailSpheres = new ArrayList<>();
         
         buildScene();
     }
@@ -116,6 +120,23 @@ public class Visualization3D {
         droneSphere.setTranslateX(dronePos.x);
         droneSphere.setTranslateY(dronePos.y);
         droneSphere.setTranslateZ(dronePos.z);
+
+        // Add to trajectory trail if moved enough
+        if (lastTrailPos == null || lastTrailPos.distance(dronePos) > 100.0) {
+            Sphere trailPoint = createSphere(50, Color.web("00FF00", 0.3));
+            trailPoint.setTranslateX(dronePos.x);
+            trailPoint.setTranslateY(dronePos.y);
+            trailPoint.setTranslateZ(dronePos.z);
+            root3D.getChildren().add(trailPoint);
+            trailSpheres.add(trailPoint);
+            lastTrailPos = new Vector3D(dronePos.x, dronePos.y, dronePos.z);
+            
+            // Limit trail length to avoid out of memory
+            if (trailSpheres.size() > 200) {
+                Sphere oldest = trailSpheres.remove(0);
+                root3D.getChildren().remove(oldest);
+            }
+        }
 
         // Update calculated drone position
         calculatedDroneSphere.setTranslateX(calculatedPos.x);

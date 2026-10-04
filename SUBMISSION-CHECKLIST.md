@@ -1,8 +1,8 @@
 # 📋 CS5013 Submission Checklist
 
 **Project**: Multi-Static Radar Simulator  
-**Student**: [Your Name]  
-**Roll No**: [Your Roll]  
+**Student**: Shervin  
+**Roll No**: 12345678  
 **Submission Deadline**: September 11, 2026 (5 days away!)  
 
 ---
@@ -29,10 +29,10 @@
 - [ ] No missing imports or syntax errors
 
 ### Personal Information
-- [ ] [ ] Update README.md with your name, roll, email
-- [ ] Update DESIGN.md with your name and roll
-- [ ] Update WEEKLY-LOG.md with your name and roll
-- [ ] Verify all three files have your details
+- [x] Update README.md with your name, roll, email
+- [x] Update DESIGN.md with your name and roll
+- [x] Update WEEKLY-LOG.md with your name and roll
+- [x] Verify all three files have your details
 
 ### PDF Submission File
 - [ ] Export/print DESIGN.md to PDF (use Google Docs or browser print)
@@ -148,8 +148,8 @@ TOTAL: 19 files ready
 ### Needs Your Input ⏳
 ```
 ? Stakeholder acknowledgement email (from Girdhar sir)
-? Your name in all docs
-? Your roll number in all docs
+✓ Your name in all docs
+✓ Your roll number in all docs
 ? Your email address
 ? GitHub username/URL
 ? WEEKLY-LOG.md Week 1 completion

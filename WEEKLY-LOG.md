@@ -1,7 +1,7 @@
 # Weekly Contribution Log
 
-**Student**: [Your Name]  
-**Roll No**: [Your Roll]  
+**Student**: Shervin  
+**Roll No**: 12345678  
 **Course**: CS5013 - Programming with AI  
 **Project**: Multi-Static Radar Simulator  
 
