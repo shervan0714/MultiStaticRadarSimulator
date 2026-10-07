@@ -45,6 +45,7 @@ public class BaselineMeasurementModelTest {
         Measurement measurement = model.generate(tx, receivers, new Vector3D(3, 4, 0));
 
         ReceiverMeasurement rm = measurement.perReceiver().get(0);
+        assertEquals("RX1", rm.receiverId());
         double bistaticRange = rm.values().get(Quantity.BISTATIC_RANGE);
         assertEquals(10.0, bistaticRange, 0.001);
     }

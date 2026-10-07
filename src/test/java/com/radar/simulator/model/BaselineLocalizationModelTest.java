@@ -111,13 +111,43 @@ public class BaselineLocalizationModelTest {
         for (int i = 0; i < receivers.size(); i++) {
             Map<Quantity, Double> values = new HashMap<>();
             values.put(Quantity.RECEIVED_POWER, 1e-9);
-            perRx.add(new ReceiverMeasurement(i, values));
+            perRx.add(new ReceiverMeasurement(receivers.get(i).getId(), values));
         }
 
         EstimationResult result = new BaselineLocalizationModel().estimate(
             tx, receivers, new Measurement(perRx, 0.0));
 
         assertEquals(Status.UNDER_CONSTRAINED, result.status());
+    }
+
+    @Test
+    public void testReorderedReceiverListGivesSameEstimate() {
+        // Measurements are matched by receiver ID, so the order of the
+        // receiver list passed to the localizer must not matter.
+        Transmitter tx = new Transmitter("TX1", new Vector3D(0, 0, 0), 2.4e9, 1000.0);
+        List<Receiver> receivers = squareWithMast();
+        Vector3D target = new Vector3D(-3000, 1500, 800);
+        Measurement measurement = new BaselineMeasurementModel().generate(tx, receivers, target);
+
+        List<Receiver> reordered = new ArrayList<>(receivers);
+        java.util.Collections.reverse(reordered);
+        EstimationResult result = new BaselineLocalizationModel().estimate(tx, reordered, measurement);
+
+        assertEquals(Status.SUCCESS, result.status());
+        assertEquals(0.0, result.position().distance(target), 1e-3);
+    }
+
+    @Test
+    public void testDuplicateReceiverIdsAreInvalid() {
+        Transmitter tx = new Transmitter("TX1", new Vector3D(0, 0, 0), 2.4e9, 1000.0);
+        List<Receiver> receivers = squareWithMast();
+        Measurement measurement = new BaselineMeasurementModel()
+            .generate(tx, receivers, new Vector3D(1000, 2000, 100));
+        receivers.add(new Receiver("RX1", new Vector3D(9000, 0, 0), 2.4e9, 10.0));
+
+        EstimationResult result = new BaselineLocalizationModel().estimate(tx, receivers, measurement);
+
+        assertEquals(Status.INVALID_INPUT, result.status());
     }
 
     private List<Receiver> squareWithMast() {
@@ -142,7 +172,7 @@ public class BaselineLocalizationModelTest {
             Map<Quantity, Double> values = new HashMap<>();
             values.put(Quantity.RECEIVED_POWER, 0.001);
             values.put(Quantity.BISTATIC_RANGE, 10000.0);
-            perRx.add(new ReceiverMeasurement(i, values));
+            perRx.add(new ReceiverMeasurement(receivers.get(i).getId(), values));
         }
         Measurement measurement = new Measurement(perRx, 0.0);
 
@@ -165,7 +195,7 @@ public class BaselineLocalizationModelTest {
         for (int i = 0; i < 3; i++) {
             Map<Quantity, Double> values = new HashMap<>();
             values.put(Quantity.BISTATIC_RANGE, 5000.0);
-            perRx.add(new ReceiverMeasurement(i, values));
+            perRx.add(new ReceiverMeasurement(receivers.get(i).getId(), values));
         }
         Measurement measurement = new Measurement(perRx, 0.0);
 

@@ -157,6 +157,37 @@ public class ExperimentRunnerTest {
         runner.run(5.0, 0.0);
     }
 
+    @Test
+    public void testMeasurementsAreStampedWithStepTime() {
+        ExperimentRunner runner = new ExperimentRunner(
+            createValidScenario(),
+            new BaselineMeasurementModel(),
+            new BaselineLocalizationModel()
+        );
+
+        List<ExperimentRecord> records = runner.run(2.0, 0.5);
+
+        for (ExperimentRecord record : records) {
+            assertEquals(record.time(), record.measurement().time(), 1e-12);
+        }
+        assertEquals(1.5, records.get(3).measurement().time(), 1e-12);
+    }
+
+    @Test
+    public void testFractionalTimeStepDoesNotDropFinalStep() {
+        ExperimentRunner runner = new ExperimentRunner(
+            createValidScenario(),
+            new BaselineMeasurementModel(),
+            new BaselineLocalizationModel()
+        );
+
+        // Accumulating 0.1 three times gives 0.30000000000000004 > 0.3
+        List<ExperimentRecord> records = runner.run(0.3, 0.1);
+
+        assertEquals(4, records.size());
+        assertEquals(0.3, records.get(3).time(), 1e-12);
+    }
+
     // --- Helper ---
 
     private Scenario createValidScenario() {

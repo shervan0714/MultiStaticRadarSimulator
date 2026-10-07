@@ -66,16 +66,22 @@ public class ExperimentRunner {
             geometryValidator.validate(transmitter, receivers);
 
         List<ExperimentRecord> records = new ArrayList<>();
-        int stepIndex = 0;
 
-        for (double time = 0; time <= duration; time += timeStep) {
+        // Derive time from the step index: accumulating time += timeStep
+        // drifts (0.1 + 0.1 + 0.1 > 0.3) and can drop the final step.
+        int stepCount = (int) Math.floor(duration / timeStep + 1e-9) + 1;
+
+        for (int stepIndex = 0; stepIndex < stepCount; stepIndex++) {
+            double time = stepIndex * timeStep;
+
             // Get ground truth from trajectory
             Vector3D groundTruthPosition = trajectory.getPosition(time);
             Vector3D groundTruthVelocity = trajectory.getVelocity(time);
 
-            // Generate measurements
-            Measurement measurement = measurementModel.generate(
+            // Generate measurements and stamp them with the simulation time
+            Measurement generated = measurementModel.generate(
                 transmitter, receivers, groundTruthPosition);
+            Measurement measurement = new Measurement(generated.perReceiver(), time);
 
             EstimationResult estimationResult;
             double positionError;
@@ -115,7 +121,6 @@ public class ExperimentRunner {
             );
 
             records.add(record);
-            stepIndex++;
         }
 
         return records;

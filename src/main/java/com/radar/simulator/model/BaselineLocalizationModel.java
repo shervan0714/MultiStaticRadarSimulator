@@ -6,7 +6,9 @@ import com.radar.simulator.util.Matrix3;
 import com.radar.simulator.util.Vector3D;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Baseline localization model: nonlinear least squares on bistatic ranges.
@@ -57,10 +59,17 @@ public class BaselineLocalizationModel implements LocalizationModel {
             return failure(Status.INVALID_INPUT);
         }
 
+        Map<String, Receiver> receiversById = new HashMap<>();
+        for (Receiver rx : receivers) {
+            if (receiversById.put(rx.getId(), rx) != null) {
+                return failure(Status.INVALID_INPUT);  // ambiguous receiver ID
+            }
+        }
+
         Vector3D tx = transmitter.getPosition();
         List<RangeEquation> equations = new ArrayList<>();
         for (ReceiverMeasurement rm : measurement.perReceiver()) {
-            Receiver rx = findReceiver(receivers, rm);
+            Receiver rx = receiversById.get(rm.receiverId());
             Double range = rm.values().get(Quantity.BISTATIC_RANGE);
             if (rx == null || range == null) continue;
             if (!Double.isFinite(range)) {
@@ -103,14 +112,6 @@ public class BaselineLocalizationModel implements LocalizationModel {
             ? Status.NUMERICALLY_UNSTABLE
             : Status.SUCCESS;
         return new EstimationResult(best, status, bestRms, conditionNumber);
-    }
-
-    /**
-     * Find the receiver a measurement belongs to.
-     */
-    private Receiver findReceiver(List<Receiver> receivers, ReceiverMeasurement rm) {
-        int index = rm.receiverId();
-        return index >= 0 && index < receivers.size() ? receivers.get(index) : null;
     }
 
     /**

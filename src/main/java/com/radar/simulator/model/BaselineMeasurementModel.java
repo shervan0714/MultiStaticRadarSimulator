@@ -46,10 +46,10 @@ public class BaselineMeasurementModel implements MeasurementModel {
             values.put(Quantity.TIME_DELAY, timeDelay);
             values.put(Quantity.RECEIVED_POWER, power);
 
-            perReceiver.add(new ReceiverMeasurement(i, values));
+            perReceiver.add(new ReceiverMeasurement(receiver.getId(), values));
         }
 
-        // Time would typically come from the scenario or experiment runner
+        // The model does not know simulation time; ExperimentRunner stamps it
         return new Measurement(perReceiver, 0.0);
     }
 }
