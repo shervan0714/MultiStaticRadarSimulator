@@ -152,6 +152,7 @@
 
 ### Work Completed
 - Upgraded the Gradle wrapper to 9.3.0: the previous 8.x wrapper failed on JDK 26 ("Unsupported class file major version 70"), so `gradlew test` could not run. Added a `gradlew` Unix script and a `runCli` Gradle task for running the pipeline without the GUI.
+- Replaced the baseline localization (power-weighted average + finite-difference gradient descent, which left 80-115 m error even on noiseless data) with a Levenberg-Marquardt least-squares solver on the bistatic-range ellipsoids using the analytic Jacobian (BaselineLocalization v2.0). It uses multiple starting points, prefers the higher-altitude solution when a mirror-image solution fits equally well, reports the RMS range residual and the Jacobian condition number, and returns INVALID_INPUT for ranges shorter than the TX-RX baseline and NUMERICALLY_UNSTABLE for ill-conditioned geometry. Noiseless CLI scenarios with 3/4/5 receivers now give 0.0000 m error. Added a small `Matrix3` helper (3x3 solve and symmetric eigenvalues).
 
 ### Contributions
 (To be filled in)

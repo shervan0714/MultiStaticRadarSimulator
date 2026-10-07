@@ -200,7 +200,7 @@ public class RegressionTest {
             assertEquals("BaselineMeasurement", record.measurementModelDescriptor().name());
             assertEquals("1.0", record.measurementModelDescriptor().version());
             assertEquals("BaselineLocalization", record.localizationModelDescriptor().name());
-            assertEquals("1.0", record.localizationModelDescriptor().version());
+            assertEquals("2.0", record.localizationModelDescriptor().version());
         }
     }
 

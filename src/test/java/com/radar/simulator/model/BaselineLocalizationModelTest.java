@@ -61,19 +61,18 @@ public class BaselineLocalizationModelTest {
     }
 
     @Test
-    public void testEstimateReturnsFailureWhenNoPower() {
+    public void testRangeShorterThanBaselineIsInvalid() {
         Transmitter tx = new Transmitter("TX1", new Vector3D(0, 0, 0), 2.4e9, 1000.0);
         List<Receiver> receivers = new ArrayList<>();
         receivers.add(new Receiver("RX1", new Vector3D(5000, 5000, 0), 2.4e9, 10.0));
         receivers.add(new Receiver("RX2", new Vector3D(-5000, 5000, 0), 2.4e9, 10.0));
         receivers.add(new Receiver("RX3", new Vector3D(0, -5000, 0), 2.4e9, 10.0));
 
-        // Create measurement with zero power
+        // RX1 is 7071 m from TX, so a 5000 m bistatic range is physically impossible
         List<ReceiverMeasurement> perRx = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             Map<Quantity, Double> values = new HashMap<>();
-            values.put(Quantity.RECEIVED_POWER, 0.0);
-            values.put(Quantity.BISTATIC_RANGE, 10000.0);
+            values.put(Quantity.BISTATIC_RANGE, 5000.0);
             perRx.add(new ReceiverMeasurement(i, values));
         }
         Measurement measurement = new Measurement(perRx, 0.0);
@@ -81,7 +80,7 @@ public class BaselineLocalizationModelTest {
         BaselineLocalizationModel locModel = new BaselineLocalizationModel();
         EstimationResult result = locModel.estimate(tx, receivers, measurement);
 
-        assertEquals(Status.NUMERICALLY_UNSTABLE, result.status());
+        assertEquals(Status.INVALID_INPUT, result.status());
     }
 
     @Test
@@ -90,7 +89,7 @@ public class BaselineLocalizationModelTest {
         ModelDescriptor descriptor = model.getDescriptor();
 
         assertEquals("BaselineLocalization", descriptor.name());
-        assertEquals("1.0", descriptor.version());
+        assertEquals("2.0", descriptor.version());
     }
 
     @Test
