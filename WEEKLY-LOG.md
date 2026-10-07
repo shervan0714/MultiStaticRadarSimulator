@@ -151,7 +151,7 @@
 ## Week 5: Oct 4 - Oct 10, 2026
 
 ### Work Completed
-(To be filled in - MID-DEMO WEEK)
+- Upgraded the Gradle wrapper to 9.3.0: the previous 8.x wrapper failed on JDK 26 ("Unsupported class file major version 70"), so `gradlew test` could not run. Added a `gradlew` Unix script and a `runCli` Gradle task for running the pipeline without the GUI.
 
 ### Contributions
 (To be filled in)

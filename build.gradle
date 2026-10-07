@@ -43,6 +43,13 @@ javafx {
     modules = ['javafx.controls', 'javafx.fxml', 'javafx.graphics']
 }
 
+tasks.register('runCli', JavaExec) {
+    group = 'application'
+    description = 'Runs the command-line simulation pipeline without the GUI.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.radar.simulator.CLISimulatorApp'
+}
+
 tasks.named('jar') {
     manifest {
         attributes(

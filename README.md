@@ -14,21 +14,24 @@ This simulator allows researchers to:
 ## Quick Start
 
 ### Prerequisites
-- Java 17+
-- Gradle 7.0+
+- JDK 17 or newer (tested on JDK 26)
+- No separate Gradle install needed: the wrapper downloads Gradle 9.3.0
 
 ### Build & Run
 
 ```bash
 # Clone the repository
-git clone https://github.com/sherv/MultiStaticRadarSimulator.git
+git clone https://github.com/shervan0714/MultiStaticRadarSimulator.git
 cd MultiStaticRadarSimulator
 
-# Build the project
-./gradlew build
+# Build and run all tests (use gradlew.bat on Windows)
+./gradlew test
 
-# Run the simulator
+# Run the JavaFX simulator
 ./gradlew run
+
+# Run the command-line pipeline (no GUI)
+./gradlew runCli --args="--receivers 4 --duration 10 --timestep 1"
 ```
 
 ## Project Structure
