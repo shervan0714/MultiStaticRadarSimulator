@@ -15,10 +15,15 @@ public final class Matrix3 {
      */
     public static double[] solve(double[][] a, double[] b) {
         double[][] m = new double[3][4];
+        double maxAbs = 0;
         for (int i = 0; i < 3; i++) {
             System.arraycopy(a[i], 0, m[i], 0, 3);
             m[i][3] = b[i];
+            for (int j = 0; j < 3; j++) {
+                maxAbs = Math.max(maxAbs, Math.abs(a[i][j]));
+            }
         }
+        double singularThreshold = Math.max(maxAbs * 1e-14, 1e-300);
 
         for (int col = 0; col < 3; col++) {
             int pivot = col;
@@ -27,7 +32,7 @@ public final class Matrix3 {
                     pivot = row;
                 }
             }
-            if (Math.abs(m[pivot][col]) < 1e-300) {
+            if (Math.abs(m[pivot][col]) < singularThreshold) {
                 return null;
             }
             double[] tmp = m[col];

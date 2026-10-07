@@ -22,6 +22,9 @@ import static org.junit.Assert.*;
  */
 public class RegressionTest {
 
+    /** Noiseless synthetic data must reproduce ground truth to within 1 mm. */
+    private static final double NOISELESS_TOLERANCE_M = 1e-3;
+
     // ===== Reference Case 1: Standard triangle, 3 receivers =====
 
     @Test
@@ -36,8 +39,8 @@ public class RegressionTest {
         for (ExperimentRecord record : records) {
             assertEquals("3-receiver triangle should succeed",
                 Status.SUCCESS, record.estimationResult().status());
-            assertTrue("Error should be finite",
-                Double.isFinite(record.positionError()));
+            assertEquals("Noiseless estimate should match ground truth",
+                0.0, record.positionError(), NOISELESS_TOLERANCE_M);
         }
     }
 
@@ -62,6 +65,7 @@ public class RegressionTest {
 
         for (ExperimentRecord record : records) {
             assertEquals(Status.SUCCESS, record.estimationResult().status());
+            assertEquals(0.0, record.positionError(), NOISELESS_TOLERANCE_M);
         }
     }
 
@@ -88,7 +92,7 @@ public class RegressionTest {
         assertEquals(6, evaluation.totalSteps());
         assertEquals(6, evaluation.successfulSteps());
         assertEquals(0, evaluation.failedSteps());
-        assertTrue("Mean error should be finite", Double.isFinite(evaluation.meanError()));
+        assertEquals(0.0, evaluation.maxError(), NOISELESS_TOLERANCE_M);
     }
 
     // ===== Difficult Geometry: 2 receivers (under-constrained) =====
@@ -159,8 +163,7 @@ public class RegressionTest {
         EvaluationResult evaluation = runner.runAndEvaluate(5.0, 1.0);
 
         assertEquals(6, evaluation.successfulSteps());
-        assertTrue("Wide baseline should produce finite errors",
-            Double.isFinite(evaluation.meanError()));
+        assertEquals(0.0, evaluation.maxError(), NOISELESS_TOLERANCE_M);
     }
 
     // ===== Reference Case: close-range target =====
@@ -183,6 +186,29 @@ public class RegressionTest {
         EvaluationResult evaluation = runner.runAndEvaluate(5.0, 1.0);
 
         assertEquals(6, evaluation.successfulSteps());
+        assertEquals(0.0, evaluation.maxError(), NOISELESS_TOLERANCE_M);
+    }
+
+    // ===== Reference Case: GUI default layout (TX and RX at different heights) =====
+
+    @Test
+    public void testReferenceCase_ElevatedTransmitter() {
+        Transmitter tx = new Transmitter("TX1", new Vector3D(0, 0, 1000), 10e9, 1.0);
+        List<Receiver> receivers = new ArrayList<>();
+        receivers.add(new Receiver("RX1", new Vector3D(10000, 0, 500), 10e9, 0));
+        receivers.add(new Receiver("RX2", new Vector3D(-10000, 0, 500), 10e9, 0));
+        receivers.add(new Receiver("RX3", new Vector3D(0, 10000, 500), 10e9, 0));
+
+        ConstantVelocityTrajectory trajectory = new ConstantVelocityTrajectory(
+            new Vector3D(5000, 5000, 2000), new Vector3D(50, 0, 0));
+        Scenario scenario = new Scenario(tx, receivers, trajectory);
+
+        ExperimentRunner runner = new ExperimentRunner(scenario,
+            new BaselineMeasurementModel(), new BaselineLocalizationModel());
+        EvaluationResult evaluation = runner.runAndEvaluate(10.0, 1.0);
+
+        assertEquals(11, evaluation.successfulSteps());
+        assertEquals(0.0, evaluation.maxError(), NOISELESS_TOLERANCE_M);
     }
 
     // ===== Regression: model identity is recorded =====
