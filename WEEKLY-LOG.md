@@ -1,9 +1,10 @@
 # Weekly Contribution Log
 
-**Student**: Shervin  
-**Roll No**: 12345678  
+**Student**: E. Sai Shervan  
+**Roll No**: CS24B073  
 **Course**: CS5013 - Programming with AI  
 **Project**: Multi-Static Radar Simulator  
+**Stakeholder**: Dr. Giridhar K, Department of Electrical Engineering  
 
 ---
 
@@ -159,18 +160,26 @@
 - Rebuilt the GUI workflow around the experiment pipeline. The old GUI moved a `Drone` frame-by-frame outside the Scenario/ExperimentRunner pipeline, and its sliders were never connected. The new `ScenarioEditor` panel edits the transmitter, a variable-length receiver list (add/remove, ID, X/Y/Z, gain), the drone start/velocity and duration/time step. "Run experiment" goes form → `ScenarioConfig` → Scenario → geometry validation → ExperimentRunner → EvaluationModule, and shows the model versions, geometry warnings and mean/max/RMS error. Bad input is reported in red naming the field. `ScenarioConfig` is plain Java, so the UI-to-scenario mapping has unit tests (design doc test plan: Configuration/UI). Removed the unused `ParameterPanel`. 103 tests, all passing.
 - Rewrote the 3D view. It used metre coordinates directly as JavaFX coordinates, but JavaFX has +Y pointing down, so the scene was not in our East/North/Up convention. `SceneTransform` now maps ENU to JavaFX (East→+x, North→+z, Up→−y; handedness preserved, so nothing is mirrored) and auto-scales to fit the scenario, with unit tests (design doc test plan: Visualization). The view shows a ground grid, E/N/U axes, receiver masts, the true trajectory line and the estimated points (downsampled to 400 for long runs, per the design doc risk list), and the error line for the selected step. Drag to orbit, scroll to zoom; a time slider and Play button step through the run. 111 tests, all passing.
 - Added the results panel and file actions to the GUI. Below the 3D view, a per-step table shows time, true and estimated X/Y/Z, error, status (failures in red), residual and condition number, with mean/max/RMS error above it. Selecting a row moves the 3D view to that step, and the slider highlights the matching row. "Save scenario", "Load scenario" and "Export results" connect the existing ScenarioPersistence to the GUI (properties file; CSV with model versions plus an evaluation summary), so a stakeholder can reproduce an experiment without editing code. Checked save → modify → load → export end-to-end: same 101 steps and identical error after reload.
+- Mid-demo documentation: rewrote the README (build/run steps, GUI and CLI usage, coordinate convention, architecture, verification, contact) and added docs/MID-DEMO.md with the demo script and an honest gap list. Removed 13 outdated files left over from setup (build-troubleshooting pages, GitHub setup notes, status summaries from 6 Sep, the javac build scripts superseded by gradlew, and the early docs/DESIGN.md draft, which contradicted the submitted Phase 3 design doc). Corrected the name and roll number in this log.
 
 ### Contributions
-(To be filled in)
+- ✓ Core workflow runs end to end in the GUI and CLI: configure → trajectory → measurement → localization → evaluation → visualization
+- ✓ Localization verified: noiseless reference cases match ground truth within 1 mm (previously 80-115 m off)
+- ✓ Removed the doc clutter left over from setup and rewrote the README; wrote the mid-demo script and an honest gap list (docs/MID-DEMO.md)
+- ✓ Test count 76 → 111, all passing
 
 ### Hours Spent
 - **Total: ____ hours**
 
 ### Next Week's Plan
-(To be filled in)
+- Incorporate mid-demo feedback
+- Receiver orientation as azimuth/elevation (input, drawing, use in measurements)
+- Seeded noise model; correct bistatic radar equation for received power
+- Ask Dr. Giridhar for his formulation and reference cases
 
 ### Blockers / Notes
-(To be filled in)
+- Stakeholder formulation still not received; the bistatic-range baseline stands in for it (design doc Plan B)
+- Two assumptions need stakeholder confirmation: the target is above a coplanar sensor plane, and a condition number above 1e8 counts as unstable
 
 ---
 
@@ -270,8 +279,8 @@
 
 | Milestone | Date | Status |
 |-----------|------|--------|
-| Design Doc | Sep 11 | On Track |
-| Mid-Demo | Oct 9 | Planned |
+| Design Doc | Sep 11 | Submitted |
+| Mid-Demo | Oct 9 | Ready |
 | Final Demo | Nov 6 | Planned |
 
 **Total Hours (Estimated)**: 80-100 hours over 10 weeks
