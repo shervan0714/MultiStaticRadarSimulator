@@ -3,7 +3,6 @@ package com.radar.simulator;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import javafx.scene.layout.BorderPane;
 import com.radar.simulator.ui.SimulatorController;
 
 /**
@@ -19,18 +18,16 @@ public class RadarSimulatorApp extends Application {
         
         // Set up the main window
         primaryStage.setTitle("Multi-Static Radar Simulator");
-        primaryStage.setWidth(1200);
-        primaryStage.setHeight(800);
-        
+
         // Create scene
-        Scene scene = new Scene(controller.getRoot(), 1200, 800);
+        Scene scene = new Scene(controller.getRoot(), 1400, 900);
         primaryStage.setScene(scene);
-        
+
+        // Open with the default scenario already evaluated
+        controller.runExperiment();
+
         // Show window
         primaryStage.show();
-        
-        // Start simulation loop
-        controller.startSimulation();
     }
 
     @Override

@@ -1,151 +1,75 @@
 package com.radar.simulator.ui;
 
-import javafx.scene.layout.Pane;
+import com.radar.simulator.core.Receiver;
+import com.radar.simulator.model.ExperimentRecord;
+import com.radar.simulator.model.Scenario;
+import com.radar.simulator.model.Status;
+import com.radar.simulator.util.Vector3D;
 import javafx.scene.Group;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.SceneAntialiasing;
 import javafx.scene.SubScene;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.Sphere;
-import javafx.scene.shape.Line;
-import javafx.scene.transform.Rotate;
-import com.radar.simulator.core.*;
-import com.radar.simulator.util.Vector3D;
-import java.util.ArrayList;
+
 import java.util.List;
 
 /**
- * 3D visualization of the radar simulator using JavaFX.
- * Displays transmitter, receivers, drone, and signal paths in 3D space.
+ * 3D view of a scenario and the result of an experiment run:
+ * transmitter (red), receivers (blue), ground-truth trajectory (green)
+ * and estimated positions (orange).
  */
 public class Visualization3D {
-    private SubScene subScene;
-    private Group root3D;
-    
-    private Sphere transmitterSphere;
-    private List<Sphere> receiverSpheres;
-    private Sphere droneSphere;
-    private Sphere calculatedDroneSphere;
-    private List<Line> signalLines;
-    
-    private List<Sphere> trailSpheres;
-    private Vector3D lastTrailPos;
-    
-    private Transmitter transmitter;
-    private List<Receiver> receivers;
-    private Drone drone;
+    private final Group root3D = new Group();
+    private final SubScene subScene;
 
-    public Visualization3D(Transmitter tx, List<Receiver> rxList, Drone drn) {
-        this.transmitter = tx;
-        this.receivers = rxList;
-        this.drone = drn;
-        
-        root3D = new Group();
-        receiverSpheres = new ArrayList<>();
-        signalLines = new ArrayList<>();
-        trailSpheres = new ArrayList<>();
-        
-        buildScene();
-    }
-
-    /**
-     * Build the initial 3D scene
-     */
-    private void buildScene() {
-        // Create camera
+    public Visualization3D() {
         PerspectiveCamera camera = new PerspectiveCamera(true);
+        camera.setFarClip(200000);
         camera.setTranslateZ(-50000);
-        
-        // Create transmitter (red sphere)
-        transmitterSphere = createSphere(300, Color.RED);
-        Vector3D txPos = transmitter.getPosition();
-        transmitterSphere.setTranslateX(txPos.x);
-        transmitterSphere.setTranslateY(txPos.y);
-        transmitterSphere.setTranslateZ(txPos.z);
-        root3D.getChildren().add(transmitterSphere);
 
-        // Create receivers (blue spheres)
-        for (Receiver rx : receivers) {
-            Sphere rxSphere = createSphere(300, Color.BLUE);
-            Vector3D rxPos = rx.getPosition();
-            rxSphere.setTranslateX(rxPos.x);
-            rxSphere.setTranslateY(rxPos.y);
-            rxSphere.setTranslateZ(rxPos.z);
-            root3D.getChildren().add(rxSphere);
-            receiverSpheres.add(rxSphere);
-        }
-
-        // Create drone (green sphere)
-        droneSphere = createSphere(200, Color.GREEN);
-        Vector3D dronePos = drone.getPosition();
-        droneSphere.setTranslateX(dronePos.x);
-        droneSphere.setTranslateY(dronePos.y);
-        droneSphere.setTranslateZ(dronePos.z);
-        root3D.getChildren().add(droneSphere);
-
-        // Create calculated position indicator (semi-transparent green)
-        calculatedDroneSphere = createSphere(150, Color.web("00FF00", 0.5));
-        root3D.getChildren().add(calculatedDroneSphere);
-
-        // Create SubScene
         subScene = new SubScene(root3D, 800, 600, true, SceneAntialiasing.BALANCED);
         subScene.setFill(Color.web("#1a1a2e"));
         subScene.setCamera(camera);
     }
 
     /**
-     * Create a sphere with specified radius and color
+     * Show only the sensor layout (e.g. when the geometry is invalid).
      */
-    private Sphere createSphere(double radius, Color color) {
+    public void showScenario(Scenario scenario) {
+        root3D.getChildren().clear();
+        root3D.getChildren().add(sphere(scenario.getTransmitter().getPosition(), 300, Color.RED));
+        for (Receiver rx : scenario.getReceivers()) {
+            root3D.getChildren().add(sphere(rx.getPosition(), 300, Color.DODGERBLUE));
+        }
+    }
+
+    /**
+     * Show the sensor layout plus the ground-truth and estimated trajectories.
+     */
+    public void showExperiment(Scenario scenario, List<ExperimentRecord> records) {
+        showScenario(scenario);
+        for (ExperimentRecord record : records) {
+            root3D.getChildren().add(sphere(record.groundTruthPosition(), 80, Color.LIMEGREEN));
+            if (record.estimationResult().status() == Status.SUCCESS) {
+                root3D.getChildren().add(sphere(record.estimationResult().position(), 50, Color.ORANGE));
+            }
+        }
+    }
+
+    private static Sphere sphere(Vector3D position, double radius, Color color) {
         Sphere sphere = new Sphere(radius);
-        PhongMaterial material = new PhongMaterial();
-        material.setDiffuseColor(color);
-        sphere.setMaterial(material);
+        sphere.setMaterial(new PhongMaterial(color));
+        sphere.setTranslateX(position.x);
+        sphere.setTranslateY(position.y);
+        sphere.setTranslateZ(position.z);
         return sphere;
     }
 
     /**
-     * Update visualization with current simulation state
-     * 
-     * @param drn Current drone position
-     * @param calculatedPos Calculated drone position from triangulation
-     * @param powers Received power at each receiver
-     * @param error Position error magnitude
-     */
-    public void updateSimulation(Drone drn, Vector3D calculatedPos, 
-                                List<Double> powers, double error) {
-        // Update drone position (actual)
-        Vector3D dronePos = drn.getPosition();
-        droneSphere.setTranslateX(dronePos.x);
-        droneSphere.setTranslateY(dronePos.y);
-        droneSphere.setTranslateZ(dronePos.z);
-
-        // Add to trajectory trail if moved enough
-        if (lastTrailPos == null || lastTrailPos.distance(dronePos) > 100.0) {
-            Sphere trailPoint = createSphere(50, Color.web("00FF00", 0.3));
-            trailPoint.setTranslateX(dronePos.x);
-            trailPoint.setTranslateY(dronePos.y);
-            trailPoint.setTranslateZ(dronePos.z);
-            root3D.getChildren().add(trailPoint);
-            trailSpheres.add(trailPoint);
-            lastTrailPos = new Vector3D(dronePos.x, dronePos.y, dronePos.z);
-            
-            // Limit trail length to avoid out of memory
-            if (trailSpheres.size() > 200) {
-                Sphere oldest = trailSpheres.remove(0);
-                root3D.getChildren().remove(oldest);
-            }
-        }
-
-        // Update calculated drone position
-        calculatedDroneSphere.setTranslateX(calculatedPos.x);
-        calculatedDroneSphere.setTranslateY(calculatedPos.y);
-        calculatedDroneSphere.setTranslateZ(calculatedPos.z);
-    }
-
-    /**
-     * Get the JavaFX Pane for integration into UI
+     * Get the JavaFX Pane for integration into the UI.
      */
     public Pane getPane() {
         Pane pane = new Pane();
