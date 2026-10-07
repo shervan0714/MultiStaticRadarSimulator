@@ -79,6 +79,9 @@ public class CLISimulatorApp {
         GeometryValidator.ValidationResult geoResult =
             validator.validate(scenario.getTransmitter(), scenario.getReceivers());
         System.out.println("[GEOMETRY] " + geoResult.message());
+        for (String warning : geoResult.warnings()) {
+            System.out.println("[WARN] " + warning);
+        }
         if (!geoResult.isValid()) {
             System.err.println("[ERROR] Cannot proceed — geometry is invalid.");
             return;

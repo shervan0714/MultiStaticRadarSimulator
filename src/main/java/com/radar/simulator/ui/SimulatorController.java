@@ -155,9 +155,10 @@ public class SimulatorController {
         }
         
         simulationRunning = true;
-        statusLabel.setText("Status: Running | Model: " + 
+        statusLabel.setText("Status: Running | Model: " +
             measurementModel.getDescriptor().name() + "/" +
-            localizationModel.getDescriptor().name());
+            localizationModel.getDescriptor().name() +
+            (geoResult.hasWarnings() ? " | WARNING: " + String.join("; ", geoResult.warnings()) : ""));
         
         animationTimer = new AnimationTimer() {
             @Override

@@ -71,7 +71,8 @@ public final class Matrix3 {
 
         for (int sweep = 0; sweep < 50; sweep++) {
             double offDiagonal = m[0][1] * m[0][1] + m[0][2] * m[0][2] + m[1][2] * m[1][2];
-            if (offDiagonal < 1e-30) break;
+            double diagonal = m[0][0] * m[0][0] + m[1][1] * m[1][1] + m[2][2] * m[2][2];
+            if (offDiagonal <= 1e-30 * diagonal || offDiagonal == 0) break;
 
             for (int p = 0; p < 2; p++) {
                 for (int q = p + 1; q < 3; q++) {
