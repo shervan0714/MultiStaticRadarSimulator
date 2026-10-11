@@ -1,16 +1,16 @@
 package com.radar.simulator.ui;
 
-import com.radar.simulator.model.BaselineLocalizationModel;
-import com.radar.simulator.model.BaselineMeasurementModel;
-import com.radar.simulator.model.EvaluationModule;
-import com.radar.simulator.model.EvaluationResult;
-import com.radar.simulator.model.ExperimentRecord;
-import com.radar.simulator.model.ExperimentRunner;
-import com.radar.simulator.model.GeometryValidator;
-import com.radar.simulator.model.LocalizationModel;
-import com.radar.simulator.model.MeasurementModel;
-import com.radar.simulator.model.Scenario;
-import com.radar.simulator.model.ScenarioPersistence;
+import com.radar.simulator.experiment.EvaluationModule;
+import com.radar.simulator.experiment.EvaluationResult;
+import com.radar.simulator.experiment.ExperimentRecord;
+import com.radar.simulator.experiment.ExperimentRunner;
+import com.radar.simulator.localization.BaselineLocalizationModel;
+import com.radar.simulator.localization.GeometryValidator;
+import com.radar.simulator.localization.LocalizationModel;
+import com.radar.simulator.measurement.BaselineMeasurementModel;
+import com.radar.simulator.measurement.MeasurementModel;
+import com.radar.simulator.persistence.ScenarioPersistence;
+import com.radar.simulator.scenario.Scenario;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Button;

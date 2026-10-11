@@ -1,11 +1,11 @@
 package com.radar.simulator.ui;
 
+import com.radar.simulator.experiment.EvaluationResult;
+import com.radar.simulator.experiment.ExperimentRunner;
+import com.radar.simulator.localization.BaselineLocalizationModel;
+import com.radar.simulator.measurement.BaselineMeasurementModel;
+import com.radar.simulator.scenario.Scenario;
 import com.radar.simulator.core.Receiver;
-import com.radar.simulator.model.BaselineLocalizationModel;
-import com.radar.simulator.model.BaselineMeasurementModel;
-import com.radar.simulator.model.EvaluationResult;
-import com.radar.simulator.model.ExperimentRunner;
-import com.radar.simulator.model.Scenario;
 import com.radar.simulator.util.Vector3D;
 import org.junit.Test;
 

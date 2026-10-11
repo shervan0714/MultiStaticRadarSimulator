@@ -1,9 +1,9 @@
 package com.radar.simulator.ui;
 
+import com.radar.simulator.scenario.ConstantVelocityTrajectory;
+import com.radar.simulator.scenario.Scenario;
 import com.radar.simulator.core.Receiver;
 import com.radar.simulator.core.Transmitter;
-import com.radar.simulator.model.ConstantVelocityTrajectory;
-import com.radar.simulator.model.Scenario;
 import com.radar.simulator.util.Vector3D;
 
 import java.util.ArrayList;

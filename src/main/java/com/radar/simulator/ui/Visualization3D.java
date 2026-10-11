@@ -1,9 +1,9 @@
 package com.radar.simulator.ui;
 
+import com.radar.simulator.experiment.ExperimentRecord;
+import com.radar.simulator.localization.Status;
+import com.radar.simulator.scenario.Scenario;
 import com.radar.simulator.core.Receiver;
-import com.radar.simulator.model.ExperimentRecord;
-import com.radar.simulator.model.Scenario;
-import com.radar.simulator.model.Status;
 import com.radar.simulator.util.Vector3D;
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;

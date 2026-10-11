@@ -1,8 +1,8 @@
 package com.radar.simulator.ui;
 
-import com.radar.simulator.model.EvaluationResult;
-import com.radar.simulator.model.ExperimentRecord;
-import com.radar.simulator.model.Status;
+import com.radar.simulator.experiment.EvaluationResult;
+import com.radar.simulator.experiment.ExperimentRecord;
+import com.radar.simulator.localization.Status;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
