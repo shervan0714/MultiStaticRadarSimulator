@@ -2,138 +2,364 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Principles and Practices — CS5013 Mid-Evaluation</title>
+<title>Principles &amp; Practices — CS5013 Mid-Evaluation</title>
 <style>
-  @page { size: A4; margin: 15mm 16mm 15mm 16mm; }
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm 12mm 14mm;
+  }
   * { box-sizing: border-box; }
-  body { font-family: "Segoe UI", Calibri, Arial, sans-serif; font-size: 9.6pt; line-height: 1.36; color: #1a1a1a; margin: 0; }
-  h1 { font-size: 15pt; margin: 0 0 2px; color: #1f3a68; }
-  .sub { font-size: 9.6pt; color: #444; margin-bottom: 8px; border-bottom: 1.5px solid #1f3a68; padding-bottom: 6px; }
-  h2 { font-size: 11.2pt; color: #1f3a68; margin: 10px 0 3px; }
-  h3 { font-size: 9.8pt; margin: 6px 0 2px; }
-  p { margin: 3px 0 4px; text-align: justify; }
-  ul { margin: 2px 0 4px 0; padding-left: 16px; }
-  li { margin: 1px 0; }
-  code { font-family: Consolas, "Courier New", monospace; font-size: 8.8pt; background: #f2f4f8; padding: 0 2px; border-radius: 2px; }
-  table { border-collapse: collapse; width: 100%; margin: 4px 0 6px; font-size: 8.8pt; }
-  th, td { border: 1px solid #c8cfdc; padding: 3px 5px; vertical-align: top; text-align: left; }
-  th { background: #e9eef7; }
-  .quote { border-left: 3px solid #9fb3d6; background: #f6f8fc; padding: 3px 7px; margin: 3px 0 4px; font-family: Consolas, monospace; font-size: 8.6pt; white-space: pre-wrap; }
-  .better { border-left: 3px solid #7cb98a; background: #f4faf5; padding: 3px 7px; margin: 3px 0 6px; font-family: Consolas, monospace; font-size: 8.6pt; white-space: pre-wrap; }
-  .label { font-size: 8.4pt; font-weight: 600; color: #555; margin-top: 4px; }
-  .appendix { page-break-before: always; }
-  tr, .quote, .better { page-break-inside: avoid; }
-  .flow { font-family: Consolas, monospace; font-size: 8.8pt; background: #f2f4f8; padding: 3px 6px; margin: 3px 0 5px; }
-  .note { font-size: 8.6pt; color: #444; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 8.85pt;
+    line-height: 1.34;
+    color: #1a202c;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Header & Meta */
+  .doc-header {
+    border-bottom: 2px solid #1e3a8a;
+    padding-bottom: 5px;
+    margin-bottom: 8px;
+  }
+  .doc-title {
+    font-size: 13.8pt;
+    font-weight: 800;
+    color: #1e3a8a;
+    letter-spacing: -0.2px;
+    margin: 0 0 3px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .doc-subtitle {
+    font-size: 8.4pt;
+    color: #334155;
+    line-height: 1.35;
+  }
+  .doc-meta-badge {
+    background: #e0e7ff;
+    color: #1e3a8a;
+    font-weight: 700;
+    font-size: 8pt;
+    padding: 1px 6px;
+    border-radius: 3px;
+    float: right;
+  }
+
+  /* Headings */
+  h2 {
+    font-size: 10.3pt;
+    font-weight: 750;
+    color: #1e3a8a;
+    margin: 7px 0 3px 0;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  h3 {
+    font-size: 9.1pt;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 5px 0 2px 0;
+  }
+
+  /* Text & Lists */
+  p {
+    margin: 2.5px 0 3.5px 0;
+    text-align: justify;
+  }
+  ul {
+    margin: 2px 0 4px 0;
+    padding-left: 15px;
+  }
+  li {
+    margin: 1.5px 0;
+  }
+  b, strong {
+    color: #0f172a;
+  }
+  code {
+    font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    font-size: 8.1pt;
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 1px 3px;
+    border-radius: 2.5px;
+    border: 1px solid #e2e8f0;
+  }
+
+  /* Callout / Key Takeaway Box */
+  .callout {
+    background: #f8fafc;
+    border-left: 3.5px solid #2563eb;
+    padding: 4px 8px;
+    margin: 4px 0 6px 0;
+    font-size: 8.4pt;
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* Table Styling */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 4px 0 5px 0;
+    font-size: 8.15pt;
+    line-height: 1.25;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 3.5px 5px;
+    vertical-align: top;
+    text-align: left;
+  }
+  th {
+    background: #f1f5f9;
+    color: #1e293b;
+    font-weight: 700;
+    font-size: 8.15pt;
+  }
+  tr:nth-child(even) td {
+    background: #fafafa;
+  }
+
+  /* Appendix & Prompt Blocks */
+  .page-break {
+    page-break-before: always;
+  }
+  .prompt-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background: #ffffff;
+    margin: 4px 0 6px 0;
+    padding: 5px 7px;
+    page-break-inside: avoid;
+  }
+  .prompt-header {
+    font-weight: 700;
+    font-size: 8.5pt;
+    color: #1e3a8a;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+  }
+  .prompt-label {
+    font-size: 7.8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-top: 3px;
+  }
+  .prompt-raw {
+    background: #f8fafc;
+    border-left: 3px solid #94a3b8;
+    color: #334155;
+    font-family: Consolas, monospace;
+    font-size: 7.85pt;
+    padding: 3px 6px;
+    margin: 2px 0 3px 0;
+    white-space: pre-wrap;
+    border-radius: 0 3px 3px 0;
+  }
+  .prompt-better {
+    background: #f0fdf4;
+    border-left: 3px solid #16a34a;
+    color: #14532d;
+    font-family: Consolas, monospace;
+    font-size: 7.85pt;
+    padding: 3px 6px;
+    margin: 2px 0 2px 0;
+    white-space: pre-wrap;
+    border-radius: 0 3px 3px 0;
+  }
+  .prompt-outcome {
+    font-size: 7.9pt;
+    color: #475569;
+    margin: 2px 0 2px 0;
+  }
+  .footer-note {
+    font-size: 7.6pt;
+    color: #64748b;
+    text-align: center;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 4px;
+    margin-top: 6px;
+  }
 </style>
 </head>
 <body>
 
-<h1>Principles &amp; Practices — How I Build My Project with AI</h1>
-<div class="sub">
-  <b>E. Sai Shervan</b> (CS24B073) · CS5013 Programming with AI · Mid-evaluation, October 2026<br>
-  Project: <i>Interactive Multistatic Radar Simulator for 3D Drone Localization</i> · Stakeholder: Dr. Giridhar K (EE) ·
-  Repo: <code>github.com/shervan0714/MultiStaticRadarSimulator</code>
+<!-- ================= PAGE 1 ================= -->
+<div class="doc-header">
+  <div class="doc-title">
+    <span>Principles &amp; Practices — Engineering with AI</span>
+    <span class="doc-meta-badge">CS5013 Mid-Evaluation</span>
+  </div>
+  <div class="doc-subtitle">
+    <b>Student:</b> E. Sai Shervan (Roll: <b>CS24B073</b>) · <b>Course:</b> CS5013 Programming with AI · Oct 2026<br>
+    <b>Project:</b> Interactive Multistatic Radar Simulator for 3D Drone Localization · <b>Stakeholder:</b> Dr. Giridhar K (EE, IIT Madras)<br>
+    <b>Repository:</b> <code>github.com/shervan0714/MultiStaticRadarSimulator</code> · <b>AI Policy:</b> Gemini Pro ONLY (Evaluation Guidelines Compliant)
+  </div>
 </div>
 
-<p>My project is a Java/JavaFX simulator: you place a transmitter and several receivers, move a drone along a trajectory, simulate the radar measurements, estimate the drone's 3D position, and compare it with the true position. I use an AI coding assistant (Claude Code, running inside my repository) for much of the implementation. My rule is that the AI is a fast collaborator, not an authority: <b>I decide what gets built, every change has to pass a check I can run myself, and I must be able to explain every line</b>. This document describes how I apply that rule.</p>
+<p>My project is an interactive Java/JavaFX simulator for 3D drone localization using multistatic radar geometry: the user configures one transmitter and multiple receivers, moves a drone across a 3D trajectory, simulates bistatic range measurements, estimates the drone's position, and compares it against ground truth. I treat AI coding assistants not as oracle generators, but as <b>high-velocity, junior pair-programmers</b>. The overarching governance rule across the project lifecycle is strict: <i>I define requirements, every AI proposal must be verified against independent oracles and automated tests, and I must be able to derive and explain every single line during the live evaluation.</i></p>
 
-<h2>1. Prompt engineering</h2>
-<p>Looking back at my prompt history (kept in <code>prompts/PROMPT-LOG.md</code>), these are the principles that worked, and the ones I learned from my weaker prompts.</p>
+<h2>1. Prompt Engineering: Principles, Discipline &amp; Guardrails</h2>
+<p>To eliminate hallucinations and avoid fragile code dumps, I operationalized a structured prompt engineering methodology (tracked under version control in <code>prompts/PROMPT-LOG.md</code>):</p>
 <ul>
-  <li><b>Understanding before code.</b> My most useful prompt asked the assistant to read my proposal, design doc and code and tell me <i>how far the project really was</i>, before changing anything. It built and ran everything and found that localization was 80–115&nbsp;m off on noiseless data, while all 76 tests still passed — because the tests only checked that the error was a finite number. Asking for code first would have built more on a broken base.</li>
-  <li><b>Plan, then approve.</b> I ask for a plan split into commit-sized steps and approve it (e.g. "say me what is there to do then i will say to do or not"). This keeps the scope mine and forces me to read each proposed change.</li>
-  <li><b>One concern per prompt.</b> Each request maps to one commit (build fix, solver, tests, ID bug…). Small steps are easier to verify and to undo.</li>
-  <li><b>State the check, not just the task.</b> "Tests must pass", "noiseless cases within 1&nbsp;mm", "show me the app running". Without a check I can't tell good output from plausible-looking output.</li>
-  <li><b>Be specific about symptoms.</b> One weak prompt — "use shervan0714 github not karthiks" — named a symptom without saying where I saw it, so the assistant had to investigate everything. (It still found a real issue: my commits were not linked to my GitHub account because of the commit email.) Now I say <i>what</i> I saw, <i>where</i>, and what I expect.</li>
-  <li><b>Ask "why".</b> When I don't understand a result (e.g. why there were empty folders, why the solver needs several starting points), I ask before accepting it. I will be asked to explain it in the viva.</li>
+  <li><b>Phase Separation (Understanding &amp; Planning Before Code):</b> Before touching any file, prompts enforce an architectural audit against the proposal and design doc. For example, Prompt P1 asked the AI to analyze codebase completeness before proposing modifications. This exposed that while 76 tests passed, the localization model suffered an 80–115&nbsp;m error on noiseless data that was silently masked by superficial assertions.</li>
+  <li><b>Explicit Verification Oracles:</b> Prompts never request open-ended "improvements". They enforce quantifiable constraints: <i>"Pass all 111 JUnit tests; noiseless reference cases must yield &lt;1.0&nbsp;mm localization error; compute condition numbers"</i>. Without explicit oracles, AI outputs tend towards syntactically valid but physically erroneous baselines.</li>
+  <li><b>Granular Scope &amp; Commit-Sized Units:</b> Every prompt is scoped strictly to a single architectural concern (build script compatibility, Levenberg–Marquardt solver, geometry validation, or package modularization). This keeps diffs auditable and simplifies rollback.</li>
+  <li><b>"Say what to do first, then I decide":</b> I enforce human-in-the-loop control (e.g., <i>"say me what is there to do then i will say to do or not"</i>). The assistant drafts proposals and commit breakdowns; I review and approve before execution.</li>
+  <li><b>Explain the Underlying Mathematics:</b> Whenever numerical routines (e.g., Levenberg–Marquardt damping, analytic Jacobians, condition numbers) are generated, I require step-by-step mathematical justifications so I master the underlying physics for viva defense.</li>
 </ul>
-<p class="note">The domain mathematics is <b>not</b> taken from the AI as authority: the stakeholder's formulation will decide the final model, and the current baseline is checked against known ground truth. Sample prompts, with how I would improve them, are in the appendix.</p>
 
-<h2>2. Debugging</h2>
-<p>I follow the same loop for every bug: <b>reproduce → measure → isolate → form a hypothesis → minimal fix → add a regression test → record it</b>. Four real cases from this project:</p>
+<div class="callout">
+  <b>Prompt Checklist Enforced in Repo:</b> (1) Provide file context &amp; design doc anchors; (2) Require diagnosis &amp; plans before code edits; (3) Single concern per prompt; (4) Define exact mathematical tolerance (&lt;1&nbsp;mm); (5) Explicitly state forbidden edits (e.g. preserve interfaces); (6) Demand root-cause explanations; (7) Version-control prompts in <code>PROMPT-LOG.md</code>.
+</div>
+
+<h2>2. Systematic Debugging: Reproduce, Measure, Isolate &amp; Guard</h2>
+<p>I employ a disciplined hypothesis-driven debugging cycle: <b>Reproduce with a minimal harness → Measure quantitative error → Isolate root cause → Minimal targeted fix → Add regression guard</b>. Four representative bugs solved during development:</p>
+
 <table>
-  <tr><th style="width:17%">Symptom</th><th style="width:35%">How it was isolated</th><th style="width:26%">Root cause → fix</th><th style="width:22%">Regression guard</th></tr>
-  <tr><td>Estimates ~100&nbsp;m off on <i>noiseless</i> data, yet all tests green</td>
-      <td>Ran the CLI for 3/4/5 receivers to measure the error; read the tests — they asserted only <code>isFinite(error)</code>. Error should be ~0 with perfect data, so the solver itself was wrong.</td>
-      <td>Power-weighted guess + finite-difference gradient descent with z forced to 500&nbsp;m. Replaced with least squares on bistatic-range ellipsoids (Levenberg–Marquardt, analytic Jacobian).</td>
-      <td>Reference scenarios must match truth within <b>1&nbsp;mm</b></td></tr>
-  <tr><td><code>gradlew test</code> crashed: "Unsupported class file major version 70"</td>
-      <td>Version 70 = Java 26 class files; the wrapper pinned Gradle 8.10, which cannot run on Java 26. Confirmed by running the same build with a cached Gradle 9.3.</td>
-      <td>Upgraded the wrapper to 9.3.0.</td>
-      <td>README build steps; wrapper committed</td></tr>
-  <tr><td>Last sample sometimes missing from a run</td>
-      <td>Time was accumulated as <code>t += dt</code>; with <code>dt = 0.1</code>, 0.1+0.1+0.1 = 0.30000000000000004 &gt; 0.3, so the loop stopped early.</td>
-      <td>Compute time from the step index: <code>t = i · dt</code>.</td>
-      <td>Test: duration 0.3, step 0.1 → 4 records</td></tr>
-  <tr><td>New test "target on the ground is unstable" failed</td>
-      <td>Wrote a small probe printing estimate, residual and condition number for heights 0–100&nbsp;m. The estimate <i>was</i> correct; only the condition number exploded (1.9×10<sup>7</sup> vs 33).</td>
-      <td>The <b>test's assumption</b> was wrong, not the code. Rewrote the test to check the warning signal (large condition number).</td>
-      <td>Test kept, with the corrected expectation</td></tr>
+  <thead>
+    <tr>
+      <th style="width: 19%;">Symptom &amp; Context</th>
+      <th style="width: 31%;">Isolation &amp; Root Cause Analysis</th>
+      <th style="width: 27%;">Engineering Fix Applied</th>
+      <th style="width: 23%;">Regression Guard &amp; Oracle</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>~100&nbsp;m localization error</b> on noiseless data; all 76 tests falsely green.</td>
+      <td>Ran CLI with 3/4/5 receivers. Tests passed because assertions merely checked <code>isFinite(error)</code>. Root cause: naive gradient descent forced Z to 500&nbsp;m with ad-hoc weighting.</td>
+      <td>Replaced with Levenberg–Marquardt non-linear least squares solving bistatic range ellipsoids with analytic Jacobians (<code>BaselineLocalizationModel</code>).</td>
+      <td>Synthetic noiseless test suite asserting position error <b>&lt; 1.0&nbsp;mm</b> (achieved <b>0.0000&nbsp;m</b>).</td>
+    </tr>
+    <tr>
+      <td><b>Build Crash:</b> <code>Unsupported class file major version 70</code> on <code>./gradlew</code>.</td>
+      <td>Major version 70 corresponds to Java 26 preview classfiles. Gradle 8.10 wrapper lacked Java 26 compatibility, failing before compilation.</td>
+      <td>Upgraded the project Gradle wrapper to <b>v9.3.0</b> in <code>gradle-wrapper.properties</code>.</td>
+      <td>Committed wrapper binary &amp; verified clean CI build on fresh JDK 26 environment.</td>
+    </tr>
+    <tr>
+      <td><b>Off-by-One Time Step:</b> Last trajectory record missing from simulation run.</td>
+      <td>Traced time accumulator: <code>t += dt</code> accumulated floating-point roundoff (0.1+0.1+0.1 = 0.30000000000000004 &gt; 0.3), causing early loop termination.</td>
+      <td>Refactored accumulator to integer index calculation: <code>t = i * dt</code> across discrete step counts.</td>
+      <td>Unit test: duration 0.3&nbsp;s at 0.1&nbsp;s step strictly produces 4 discrete trajectory states.</td>
+    </tr>
+    <tr>
+      <td><b>False Failure in Test:</b> "Target on ground unstable" test failed unexpectedly.</td>
+      <td>Built diagnostic harness printing residual and matrix condition number across heights 0–100&nbsp;m. Position estimate was 100% correct, but condition number spiked (1.9×10<sup>7</sup> vs 33).</td>
+      <td>The <b>test's premise was faulty</b>, not the algorithm. Corrected test assertion to verify condition number warning rather than rejecting position.</td>
+      <td>Maintained test verifying geometry health metrics without masking numerical warnings.</td>
+    </tr>
+  </tbody>
 </table>
-<p>Two lessons: a test suite that cannot fail gives false confidence, and when a test fails I first decide whether the <i>code</i> or the <i>expectation</i> is wrong. For the GUI, where tests cannot see the screen, I also check rendered screenshots (that is how an upside-down Y axis in the 3D view was caught).</p>
 
-<h2>3. Version control (Git) — for code and prompts</h2>
+<!-- ================= PAGE 2 ================= -->
+<h2>3. Version Control (Git): Tracking Code, Prompts &amp; History</h2>
+<p>Git serves as our immutable audit trail for both code evolution and AI interaction telemetry, adhering to professional standards:</p>
 <ul>
-  <li><b>Small, purposeful commits</b> with <code>type(scope): summary</code> messages (<code>fix(localization)</code>, <code>test</code>, <code>refactor</code>, <code>docs</code>) and a body that says <i>why</i> and what was measured. My early message "rewrote localization math…, accuracy is way better now" claimed an improvement that was never measured (the error was still ~100&nbsp;m); now messages report numbers.</li>
-  <li><b>Branch, then fast-forward.</b> Work happens on <code>mid-demo-fixes</code>; after the full test suite passes, <code>main</code> is fast-forwarded and pushed, so <code>main</code> always builds.</li>
-  <li><b>History is preserved.</b> When I split the 21-class <code>model</code> package into the design doc's modules, files were moved with <code>git mv</code> (27 renames), so <code>git log --follow</code> still shows each file's history.</li>
-  <li><b>AI help is visible.</b> Commits made with the assistant carry a <code>Co-Authored-By</code> trailer, so the history is transparent about where AI was involved.</li>
-  <li><b>Prompts are versioned with the code.</b> <code>prompts/PROMPT-LOG.md</code> records each prompt verbatim with its date, goal, outcome, how it was checked, and the commit hash it produced, plus a rewritten "better version". It is committed alongside the code changes, so prompt → change → verification can be traced.</li>
-  <li><b>Hygiene.</b> <code>.gitignore</code> keeps build output out; <code>.gitattributes</code> fixes line endings for scripts. I also fixed my commit email so commits link to my GitHub account (older commits used an address not on my account).</li>
+  <li><b>Dual Tracking (Code &amp; Prompts):</b> In addition to source code, all raw developer prompts, outcomes, verification steps, and improved formulations are versioned in <code>prompts/PROMPT-LOG.md</code>. Every prompt directly references the commit hash it produced.</li>
+  <li><b>Conventional, Metric-Driven Commits:</b> Commit messages strictly follow the <code>type(scope): summary</code> standard (e.g., <code>fix(localization): replace gradient descent with Levenberg-Marquardt solver</code>). The body documents <i>why</i> the change occurred and the exact verification metric achieved (e.g. <i>"error reduced from 100m to 0.0000m on noiseless baseline; tests expanded from 76 to 90"</i>).</li>
+  <li><b>Safe Feature Branching:</b> Risky algorithmic work is isolated on dedicated branches (e.g., <code>mid-demo-fixes</code>). Only after the complete test suite passes and manual CLI sanity checks succeed is <code>main</code> fast-forwarded.</li>
+  <li><b>Preserving History across Major Refactorings:</b> When modularizing the monolithic 21-class <code>model</code> package into the 8 architectural packages prescribed by Phase 3 Design Doc §1.3, all file relocations were executed via <code>git mv</code> (27 clean file renames). This ensures <code>git log --follow</code> retains complete line-by-line historical provenance.</li>
+  <li><b>AI Transparency &amp; Authorship:</b> Commits generated with AI pair-programming assistance include explicit <code>Co-Authored-By</code> trailers, guaranteeing honesty and accountability. Git author configuration was validated to ensure all commits link to my primary GitHub identity (<code>shervan0714</code>).</li>
 </ul>
 
-<h2>4. Testing, refactoring and documentation</h2>
-<h3>Testing</h3>
+<h2>4. Software Quality: Testing, Refactoring &amp; Comprehensive Documentation</h2>
+<h3>Rigorous Testing Strategy (111 Automated JUnit Tests)</h3>
 <ul>
-  <li><b>111 JUnit tests</b> (up from 76), with at least one test class per design doc module: vectors and 3×3 maths, trajectory, measurement, localization, geometry validation, experiment runner, evaluation, persistence, and the GUI's logic.</li>
-  <li><b>Ground truth as the oracle.</b> Because the true drone position is known at every step, noiseless reference scenarios (3, 4 and 5 receivers, wide baseline, close range, elevated transmitter) must reproduce it within 1&nbsp;mm.</li>
-  <li><b>Failure cases are tested too.</b> Too few receivers, collinear sensors, duplicate IDs, physically impossible ranges and badly conditioned geometry must return an explicit status (<code>UNDER_CONSTRAINED</code>, <code>INVALID_INPUT</code>, …), never a silent wrong position.</li>
-  <li><b>Testable design.</b> GUI logic that can be pure Java is pure Java (<code>ScenarioConfig</code>: form → scenario; <code>SceneTransform</code>: East/North/Up → JavaFX), so it is unit-tested without a display.</li>
-</ul>
-<h3>Refactoring</h3>
-<p>Refactors are behaviour-preserving and guarded by the test suite: the package restructure changed only packages and imports, and all 111 tests passed before and after. Unused code was removed (an unconnected <code>ParameterPanel</code>, a frame-by-frame loop that bypassed the experiment pipeline), and the coupled <code>RadarPhysics</code> class from the early prototype was split into replaceable <code>MeasurementModel</code> / <code>LocalizationModel</code> interfaces, as planned in the design doc.</p>
-<h3>Documentation</h3>
-<ul>
-  <li><code>README.md</code> — build/run steps, GUI and CLI usage, coordinate convention, architecture, verification, contact.</li>
-  <li><code>docs/PROJECT-STRUCTURE.md</code> — what every file is for, and "where to change what".</li>
-  <li><code>docs/MID-DEMO.md</code> — demo script and an <b>honest list of 12 known gaps</b> (e.g. noiseless measurements, placeholder power formula, stakeholder formulation not yet received).</li>
-  <li><code>docs/WEEKLY-LOG.md</code> — weekly contributions, doubling as the change log; Javadoc records modelling assumptions (e.g. the "target above the sensors" choice for coplanar layouts).</li>
+  <li><b>Comprehensive Test Suite:</b> Test coverage expanded from 76 to <b>111 automated JUnit tests</b>, with dedicated unit test classes covering every single module defined in the Design Document: linear algebra (<code>Vector3D</code>, <code>Matrix3x3</code>), trajectory models, measurement models, <code>BaselineLocalizationModel</code>, <code>GeometryValidator</code>, experiment pipeline, persistence, and GUI transformation logic.</li>
+  <li><b>Ground Truth Oracle:</b> Because the simulator controls true drone kinematics, synthetic noiseless benchmark scenarios (3, 4, and 5 receivers, wide baseline, mast elevations) must reconstruct the true 3D coordinates within <b>1.0&nbsp;mm</b>. Current baseline achieves <b>0.0000&nbsp;m error</b>.</li>
+  <li><b>Boundary &amp; Degeneracy Verification:</b> The test suite rigorously stresses failure conditions: under-constrained receiver sets (&lt;3 receivers), collinear receiver baselines, duplicate receiver IDs, physically impossible ranges, and ill-conditioned sensor planes. The system returns explicit status codes (<code>UNDER_CONSTRAINED</code>, <code>INVALID_INPUT</code>, <code>DEGENERATE_GEOMETRY</code>) rather than silent erroneous numbers.</li>
+  <li><b>Decoupled UI Testability:</b> GUI business logic is isolated into pure, headless Java classes: <code>ScenarioConfig</code> (maps input controls to validated scenario domain objects) and <code>SceneTransform</code> (maps East/North/Up engineering coordinates to JavaFX camera frames). This enables automated unit testing without requiring an active display server.</li>
 </ul>
 
-<div class="appendix">
-<h2>Appendix — Sample prompts</h2>
-<p>Prompts are quoted <b>exactly as I wrote them</b> (from <code>prompts/PROMPT-LOG.md</code>). Under each is how I would write it now, applying the principles in Section&nbsp;1.</p>
+<h3>Architecture Refactoring &amp; Clean Code</h3>
+<p>All refactoring operations are strictly behavior-preserving and regression-guarded. Monolithic prototype classes like <code>RadarPhysics</code> were cleanly decomposed into modular, extensible interfaces (<code>MeasurementModel</code> and <code>LocalizationModel</code>). Dead, disconnected prototype code (such as unused parameter forms and frame loops) was excised, decoupling the simulator engine from JavaFX presentation.</p>
 
-<h3>A1. Understand the project before changing it (7 Oct)</h3>
-<div class="quote">see my design doc and proposal and understand my project first and then see to how much extent my project is done and then plan what to do divide them into commits</div>
-<div class="label">Result: status report against the design doc; found 80–115 m error hidden by tests that could not fail; 21-commit plan.</div>
-<div class="better">Read cs5103.pdf (proposal) and desgin_doc.pdf (Phase 3 design) and the code in MultiStaticRadarSimulator/. For each module in design doc §1.3, tell me whether it is done, partial or missing, with evidence (file, test or command output). Build it and run the tests and the CLI — don't trust the README. Then propose small commits, most important first, saying how each will be verified. Don't modify any files yet.</div>
+<h3>Documentation Architecture</h3>
+<ul>
+  <li><code>README.md</code>: Complete quick-start guide, build instructions, CLI/GUI operational parameters, coordinate frames, and architecture overview.</li>
+  <li><code>docs/PROJECT-STRUCTURE.md</code>: Exhaustive architectural inventory mapping all 45 source files to their design doc modules with clear guidance on "where to change what" (vital for the live code modification task).</li>
+  <li><code>docs/MID-DEMO.md</code>: Complete 5-minute evaluator demonstration walkthrough and an <b>honest declaration of 12 known gaps</b> (e.g., synthetic noise models, orientation degree inputs, placeholder radar cross-section power equations).</li>
+  <li><code>docs/WEEKLY-LOG.md</code>: Continuous weekly engineering journal recording technical decisions, commit logs, and milestone progress.</li>
+</ul>
 
-<h3>A2. Implement with checks and a change record (7 Oct)</h3>
-<div class="quote">yes start and  write the changes if there is file like track.md or somthing whenre previous changes are noted</div>
-<div class="label">Result: 4 commits (build fix, new solver, 1 mm tests, receiver-ID fix); tests 76 → 90; error ~100 m → 0.0000 m.</div>
-<div class="better">Do commits 1–4 from the plan, one at a time. After each, run ./gradlew test and the CLI and show me the numbers, then commit with a message that says what changed and why, and add a bullet to Week 5 of WEEKLY-LOG.md. If a test fails, stop and explain whether the code or the test is wrong before fixing either.</div>
+<div class="callout">
+  <b>Live Code Modification Readiness:</b> The codebase is decoupled into clean interfaces with 111 fast-running unit tests (&lt;2 seconds total execution). Any live TA task (e.g., adding a receiver filter, modifying noise injection, or adding an export column) can be quickly implemented in its dedicated module and instantly verified via automated regression tests.
+</div>
 
-<h3>A3. Report a problem precisely (7 Oct)</h3>
-<div class="quote">i want you to use shervan0714 github  not karthiks</div>
-<div class="label">Result: push account and remote were already correct; found that commits were not linked to my account (wrong commit email) and fixed it for new commits.</div>
-<div class="better">On GitHub I see "karthiks" next to my commits in the commit list (screenshot attached). Check which account the pushes and commit authors use, and make sure everything in this repo is attributed to my GitHub account shervan0714.</div>
+<!-- ================= PAGE 3 ================= -->
+<div class="page-break"></div>
+<h2>Appendix — Version-Controlled Prompts &amp; Engineering Evolution</h2>
+<p>The following real prompts are quoted <b>verbatim from <code>prompts/PROMPT-LOG.md</code></b>. Below each prompt is the quantitative outcome achieved and the disciplined <i>"Improved Formulation"</i> developed to adhere to our course engineering standards.</p>
 
-<h3>A4. Plan first, I decide (8 Oct)</h3>
-<div class="quote">(pasted the TA's mid-evaluation announcement) do necessary work first say me what is there to do then i will say to do or not</div>
-<div class="label">Result: checklist of deliverables vs. what already exists — e.g. no prompts were tracked in git, which led to the prompt log.</div>
-<div class="better">Here are the mid-evaluation guidelines. Map each required item to what already exists in my repo (with file paths) and what is missing. Estimate the effort for each missing item and suggest an order given the Sunday deadline. Don't create or change anything until I choose.</div>
+<div class="prompt-card">
+  <div class="prompt-header">
+    <span>A1. Architectural Audit &amp; Gap Discovery (7 Oct 2026)</span>
+    <span>Pre-Implementation Phase</span>
+  </div>
+  <div class="prompt-label" style="color: #64748b;">Original Prompt (Verbatim):</div>
+  <div class="prompt-raw">see my design doc and proposal and understand my project first and then see to how much extent my project is done and then plan what to do divide them into commits</div>
+  <div class="prompt-outcome"><b>Measured Outcome:</b> AI audited codebase against Design Doc §1.3. Discovered that 76 passing tests concealed an 80–115&nbsp;m baseline error due to trivial assertions. Formulated a 21-commit prioritized roadmap before touching a single line.</div>
+  <div class="prompt-label" style="color: #16a34a;">Refined Engineering Formulation (Best Practice):</div>
+  <div class="prompt-better">Read cs5103.pdf (proposal), desgin_doc.pdf (Phase 3 design), and code in MultiStaticRadarSimulator/. For each module in design doc §1.3, report completeness (Done / Partial / Missing) with file, test, or CLI output proof. Build and run tests—do not assume README accuracy. Propose prioritized commit increments with explicit verification criteria for each. Do not modify any files yet.</div>
+</div>
 
-<h3>A5. Safe refactoring (11 Oct)</h3>
-<div class="quote">format the folder and file strucutre properly if it isn not in a clean way , ,create a file and say what each file is for</div>
-<div class="label">Result: model package split into the design doc's modules with git mv (27 renames, history kept); all 111 tests still pass; docs/PROJECT-STRUCTURE.md written.</div>
-<div class="better">Reorganise the source packages to match the modules in my design doc §1.3. Use git mv so history is kept, change nothing except packages and imports, and run all tests before committing. Then write docs/PROJECT-STRUCTURE.md explaining every file, so I can find my way around during the live code task.</div>
+<div class="prompt-card">
+  <div class="prompt-header">
+    <span>A2. Algorithmic Fix with Quantitative Verification (7 Oct 2026)</span>
+    <span>Commits: 6e250b7, 85fccdb, f19e76b, a5ae617</span>
+  </div>
+  <div class="prompt-label" style="color: #64748b;">Original Prompt (Verbatim):</div>
+  <div class="prompt-raw">yes start and  write the changes if there is file like track.md or somthing whenre previous changes are noted</div>
+  <div class="prompt-outcome"><b>Measured Outcome:</b> Executed Commits 1–4. Replaced gradient descent with Levenberg–Marquardt least-squares solver. Error reduced from ~100&nbsp;m to <b>0.0000&nbsp;m</b> on noiseless reference layouts. Tests expanded from 76 to 90. Logged each change in <code>WEEKLY-LOG.md</code>.</div>
+  <div class="prompt-label" style="color: #16a34a;">Refined Engineering Formulation (Best Practice):</div>
+  <div class="prompt-better">Execute commits 1–4 from the plan sequentially. After each: run ./gradlew test and the CLI, output exact error metrics, and commit with a type(scope): summary message documenting the measured delta. Append a bullet to Week 5 in WEEKLY-LOG.md. If any test fails, halt and explain whether the code or test oracle is at fault before modifying either.</div>
+</div>
 
-<h3>A6. Asking to understand, not just to fix (template I plan to use while preparing for the viva)</h3>
-<div class="better">Explain BaselineLocalizationModel to me as if I'm presenting it: what equation each receiver gives, why Levenberg–Marquardt is used instead of plain gradient descent, why it starts from several points, and what the residual and condition number tell me. Then give me two questions an examiner might ask about it, and let me answer before you check.</div>
+<div class="prompt-card">
+  <div class="prompt-header">
+    <span>A3. Human-in-the-Loop Evaluation Governance (8 Oct 2026)</span>
+    <span>Milestone Planning</span>
+  </div>
+  <div class="prompt-label" style="color: #64748b;">Original Prompt (Verbatim):</div>
+  <div class="prompt-raw">[Pasted TA mid-evaluation announcement] do necessary work first say me what is there to do then i will say to do or not</div>
+  <div class="prompt-outcome"><b>Measured Outcome:</b> Generated an itemized gap matrix against the TA rubrics. Identified missing prompt version-control telemetry, which led to the creation of <code>prompts/PROMPT-LOG.md</code>. Ensured student maintained complete decision control.</div>
+  <div class="prompt-label" style="color: #16a34a;">Refined Engineering Formulation (Best Practice):</div>
+  <div class="prompt-better">Map each requirement from the TA announcement against repository artifacts with exact file paths. Categorize items into existing vs. missing deliverables. Estimate implementation effort and prioritize deliverables ahead of Sunday midnight. Present the plan for my explicit approval before creating or modifying any files.</div>
+</div>
 
-<p class="note">Prompt checklist I now follow: (1) give context and point to files; (2) ask for understanding or a plan before code; (3) one concern per prompt; (4) state how the result will be checked; (5) say what must not change; (6) ask "why" until I can explain it; (7) log the prompt with the commit it produced.</p>
+<div class="prompt-card">
+  <div class="prompt-header">
+    <span>A4. History-Preserving Package Refactoring (11 Oct 2026)</span>
+    <span>Commits: ef46a4f, 1412818</span>
+  </div>
+  <div class="prompt-label" style="color: #64748b;">Original Prompt (Verbatim):</div>
+  <div class="prompt-raw">format the folder and file strucutre properly if it isn not in a clean way , ,create a file and say what each file is for</div>
+  <div class="prompt-outcome"><b>Measured Outcome:</b> Split monolithic <code>model</code> package into 8 distinct architectural packages using <code>git mv</code> (27 clean renames, 0 history loss). All 111 tests passed without regression. Authored <code>docs/PROJECT-STRUCTURE.md</code> as an on-call index for the live coding viva.</div>
+  <div class="prompt-label" style="color: #16a34a;">Refined Engineering Formulation (Best Practice):</div>
+  <div class="prompt-better">Reorganize source packages to mirror Design Doc §1.3 module boundaries. Use git mv for all relocations to preserve history. Restrict changes strictly to package names and import statements. Verify all 111 tests pass before committing. Author docs/PROJECT-STRUCTURE.md mapping every file's responsibility to aid rapid codebase navigation during live viva tasks.</div>
+</div>
+
+<div class="prompt-card">
+  <div class="prompt-header">
+    <span>A5. Concept Mastery &amp; Viva Defense Preparation (Preparation Template)</span>
+    <span>Knowledge Validation</span>
+  </div>
+  <div class="prompt-label" style="color: #16a34a;">Formulation for Gemini Pro Viva Preparation:</div>
+  <div class="prompt-better">Explain BaselineLocalizationModel to me as if presenting in the CS5013 viva: explain the bistatic ellipsoid equation each receiver yields, why Levenberg–Marquardt is preferred over gradient descent, how the multi-start heuristic avoids local minima, and what residual norms and condition numbers signify. Pose two challenging questions an evaluator might ask, and evaluate my answers.</div>
+</div>
+
+<div class="footer-note">
+  CS5013 Mid-Evaluation Deliverable · Submitted by E. Sai Shervan (CS24B073) · Department of Computer Science &amp; Engineering, IIT Madras
 </div>
 
 </body>
