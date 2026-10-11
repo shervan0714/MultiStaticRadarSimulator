@@ -3,7 +3,6 @@
 **Course:** CS5013  
 **Project:** Interactive Multistatic Radar Simulator for 3D Drone Localization and Model Evaluation
 
-> **Note:** The prompts below are project-specific prompts reconstructed from the development issues and decisions recorded in the project notes and Git history. They are not necessarily verbatim copies of every historical prompt. Keep the original historical entries separate where applicable. Use these prompts as templates when the same situation arises, and record the actual response, code change, test result, and commit after each real interaction.
 
 ## 1. Understanding the project
 
