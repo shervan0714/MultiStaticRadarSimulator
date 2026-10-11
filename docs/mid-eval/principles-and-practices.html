@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Principles and Practices — CS5013 Mid-Evaluation</title>
+<style>
+  @page { size: A4; margin: 15mm 16mm 15mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Calibri, Arial, sans-serif; font-size: 9.6pt; line-height: 1.36; color: #1a1a1a; margin: 0; }
+  h1 { font-size: 15pt; margin: 0 0 2px; color: #1f3a68; }
+  .sub { font-size: 9.6pt; color: #444; margin-bottom: 8px; border-bottom: 1.5px solid #1f3a68; padding-bottom: 6px; }
+  h2 { font-size: 11.2pt; color: #1f3a68; margin: 10px 0 3px; }
+  h3 { font-size: 9.8pt; margin: 6px 0 2px; }
+  p { margin: 3px 0 4px; text-align: justify; }
+  ul { margin: 2px 0 4px 0; padding-left: 16px; }
+  li { margin: 1px 0; }
+  code { font-family: Consolas, "Courier New", monospace; font-size: 8.8pt; background: #f2f4f8; padding: 0 2px; border-radius: 2px; }
+  table { border-collapse: collapse; width: 100%; margin: 4px 0 6px; font-size: 8.8pt; }
+  th, td { border: 1px solid #c8cfdc; padding: 3px 5px; vertical-align: top; text-align: left; }
+  th { background: #e9eef7; }
+  .quote { border-left: 3px solid #9fb3d6; background: #f6f8fc; padding: 3px 7px; margin: 3px 0 4px; font-family: Consolas, monospace; font-size: 8.6pt; white-space: pre-wrap; }
+  .better { border-left: 3px solid #7cb98a; background: #f4faf5; padding: 3px 7px; margin: 3px 0 6px; font-family: Consolas, monospace; font-size: 8.6pt; white-space: pre-wrap; }
+  .label { font-size: 8.4pt; font-weight: 600; color: #555; margin-top: 4px; }
+  .appendix { page-break-before: always; }
+  tr, .quote, .better { page-break-inside: avoid; }
+  .flow { font-family: Consolas, monospace; font-size: 8.8pt; background: #f2f4f8; padding: 3px 6px; margin: 3px 0 5px; }
+  .note { font-size: 8.6pt; color: #444; }
+</style>
+</head>
+<body>
+
+<h1>Principles &amp; Practices — How I Build My Project with AI</h1>
+<div class="sub">
+  <b>E. Sai Shervan</b> (CS24B073) · CS5013 Programming with AI · Mid-evaluation, October 2026<br>
+  Project: <i>Interactive Multistatic Radar Simulator for 3D Drone Localization</i> · Stakeholder: Dr. Giridhar K (EE) ·
+  Repo: <code>github.com/shervan0714/MultiStaticRadarSimulator</code>
+</div>
+
+<p>My project is a Java/JavaFX simulator: you place a transmitter and several receivers, move a drone along a trajectory, simulate the radar measurements, estimate the drone's 3D position, and compare it with the true position. I use an AI coding assistant (Claude Code, running inside my repository) for much of the implementation. My rule is that the AI is a fast collaborator, not an authority: <b>I decide what gets built, every change has to pass a check I can run myself, and I must be able to explain every line</b>. This document describes how I apply that rule.</p>
+
+<h2>1. Prompt engineering</h2>
+<p>Looking back at my prompt history (kept in <code>prompts/PROMPT-LOG.md</code>), these are the principles that worked, and the ones I learned from my weaker prompts.</p>
+<ul>
+  <li><b>Understanding before code.</b> My most useful prompt asked the assistant to read my proposal, design doc and code and tell me <i>how far the project really was</i>, before changing anything. It built and ran everything and found that localization was 80–115&nbsp;m off on noiseless data, while all 76 tests still passed — because the tests only checked that the error was a finite number. Asking for code first would have built more on a broken base.</li>
+  <li><b>Plan, then approve.</b> I ask for a plan split into commit-sized steps and approve it (e.g. "say me what is there to do then i will say to do or not"). This keeps the scope mine and forces me to read each proposed change.</li>
+  <li><b>One concern per prompt.</b> Each request maps to one commit (build fix, solver, tests, ID bug…). Small steps are easier to verify and to undo.</li>
+  <li><b>State the check, not just the task.</b> "Tests must pass", "noiseless cases within 1&nbsp;mm", "show me the app running". Without a check I can't tell good output from plausible-looking output.</li>
+  <li><b>Be specific about symptoms.</b> One weak prompt — "use shervan0714 github not karthiks" — named a symptom without saying where I saw it, so the assistant had to investigate everything. (It still found a real issue: my commits were not linked to my GitHub account because of the commit email.) Now I say <i>what</i> I saw, <i>where</i>, and what I expect.</li>
+  <li><b>Ask "why".</b> When I don't understand a result (e.g. why there were empty folders, why the solver needs several starting points), I ask before accepting it. I will be asked to explain it in the viva.</li>
+</ul>
+<p class="note">The domain mathematics is <b>not</b> taken from the AI as authority: the stakeholder's formulation will decide the final model, and the current baseline is checked against known ground truth. Sample prompts, with how I would improve them, are in the appendix.</p>
+
+<h2>2. Debugging</h2>
+<p>I follow the same loop for every bug: <b>reproduce → measure → isolate → form a hypothesis → minimal fix → add a regression test → record it</b>. Four real cases from this project:</p>
+<table>
+  <tr><th style="width:17%">Symptom</th><th style="width:35%">How it was isolated</th><th style="width:26%">Root cause → fix</th><th style="width:22%">Regression guard</th></tr>
+  <tr><td>Estimates ~100&nbsp;m off on <i>noiseless</i> data, yet all tests green</td>
+      <td>Ran the CLI for 3/4/5 receivers to measure the error; read the tests — they asserted only <code>isFinite(error)</code>. Error should be ~0 with perfect data, so the solver itself was wrong.</td>
+      <td>Power-weighted guess + finite-difference gradient descent with z forced to 500&nbsp;m. Replaced with least squares on bistatic-range ellipsoids (Levenberg–Marquardt, analytic Jacobian).</td>
+      <td>Reference scenarios must match truth within <b>1&nbsp;mm</b></td></tr>
+  <tr><td><code>gradlew test</code> crashed: "Unsupported class file major version 70"</td>
+      <td>Version 70 = Java 26 class files; the wrapper pinned Gradle 8.10, which cannot run on Java 26. Confirmed by running the same build with a cached Gradle 9.3.</td>
+      <td>Upgraded the wrapper to 9.3.0.</td>
+      <td>README build steps; wrapper committed</td></tr>
+  <tr><td>Last sample sometimes missing from a run</td>
+      <td>Time was accumulated as <code>t += dt</code>; with <code>dt = 0.1</code>, 0.1+0.1+0.1 = 0.30000000000000004 &gt; 0.3, so the loop stopped early.</td>
+      <td>Compute time from the step index: <code>t = i · dt</code>.</td>
+      <td>Test: duration 0.3, step 0.1 → 4 records</td></tr>
+  <tr><td>New test "target on the ground is unstable" failed</td>
+      <td>Wrote a small probe printing estimate, residual and condition number for heights 0–100&nbsp;m. The estimate <i>was</i> correct; only the condition number exploded (1.9×10<sup>7</sup> vs 33).</td>
+      <td>The <b>test's assumption</b> was wrong, not the code. Rewrote the test to check the warning signal (large condition number).</td>
+      <td>Test kept, with the corrected expectation</td></tr>
+</table>
+<p>Two lessons: a test suite that cannot fail gives false confidence, and when a test fails I first decide whether the <i>code</i> or the <i>expectation</i> is wrong. For the GUI, where tests cannot see the screen, I also check rendered screenshots (that is how an upside-down Y axis in the 3D view was caught).</p>
+
+<h2>3. Version control (Git) — for code and prompts</h2>
+<ul>
+  <li><b>Small, purposeful commits</b> with <code>type(scope): summary</code> messages (<code>fix(localization)</code>, <code>test</code>, <code>refactor</code>, <code>docs</code>) and a body that says <i>why</i> and what was measured. My early message "rewrote localization math…, accuracy is way better now" claimed an improvement that was never measured (the error was still ~100&nbsp;m); now messages report numbers.</li>
+  <li><b>Branch, then fast-forward.</b> Work happens on <code>mid-demo-fixes</code>; after the full test suite passes, <code>main</code> is fast-forwarded and pushed, so <code>main</code> always builds.</li>
+  <li><b>History is preserved.</b> When I split the 21-class <code>model</code> package into the design doc's modules, files were moved with <code>git mv</code> (27 renames), so <code>git log --follow</code> still shows each file's history.</li>
+  <li><b>AI help is visible.</b> Commits made with the assistant carry a <code>Co-Authored-By</code> trailer, so the history is transparent about where AI was involved.</li>
+  <li><b>Prompts are versioned with the code.</b> <code>prompts/PROMPT-LOG.md</code> records each prompt verbatim with its date, goal, outcome, how it was checked, and the commit hash it produced, plus a rewritten "better version". It is committed alongside the code changes, so prompt → change → verification can be traced.</li>
+  <li><b>Hygiene.</b> <code>.gitignore</code> keeps build output out; <code>.gitattributes</code> fixes line endings for scripts. I also fixed my commit email so commits link to my GitHub account (older commits used an address not on my account).</li>
+</ul>
+
+<h2>4. Testing, refactoring and documentation</h2>
+<h3>Testing</h3>
+<ul>
+  <li><b>111 JUnit tests</b> (up from 76), with at least one test class per design doc module: vectors and 3×3 maths, trajectory, measurement, localization, geometry validation, experiment runner, evaluation, persistence, and the GUI's logic.</li>
+  <li><b>Ground truth as the oracle.</b> Because the true drone position is known at every step, noiseless reference scenarios (3, 4 and 5 receivers, wide baseline, close range, elevated transmitter) must reproduce it within 1&nbsp;mm.</li>
+  <li><b>Failure cases are tested too.</b> Too few receivers, collinear sensors, duplicate IDs, physically impossible ranges and badly conditioned geometry must return an explicit status (<code>UNDER_CONSTRAINED</code>, <code>INVALID_INPUT</code>, …), never a silent wrong position.</li>
+  <li><b>Testable design.</b> GUI logic that can be pure Java is pure Java (<code>ScenarioConfig</code>: form → scenario; <code>SceneTransform</code>: East/North/Up → JavaFX), so it is unit-tested without a display.</li>
+</ul>
+<h3>Refactoring</h3>
+<p>Refactors are behaviour-preserving and guarded by the test suite: the package restructure changed only packages and imports, and all 111 tests passed before and after. Unused code was removed (an unconnected <code>ParameterPanel</code>, a frame-by-frame loop that bypassed the experiment pipeline), and the coupled <code>RadarPhysics</code> class from the early prototype was split into replaceable <code>MeasurementModel</code> / <code>LocalizationModel</code> interfaces, as planned in the design doc.</p>
+<h3>Documentation</h3>
+<ul>
+  <li><code>README.md</code> — build/run steps, GUI and CLI usage, coordinate convention, architecture, verification, contact.</li>
+  <li><code>docs/PROJECT-STRUCTURE.md</code> — what every file is for, and "where to change what".</li>
+  <li><code>docs/MID-DEMO.md</code> — demo script and an <b>honest list of 12 known gaps</b> (e.g. noiseless measurements, placeholder power formula, stakeholder formulation not yet received).</li>
+  <li><code>docs/WEEKLY-LOG.md</code> — weekly contributions, doubling as the change log; Javadoc records modelling assumptions (e.g. the "target above the sensors" choice for coplanar layouts).</li>
+</ul>
+
+<div class="appendix">
+<h2>Appendix — Sample prompts</h2>
+<p>Prompts are quoted <b>exactly as I wrote them</b> (from <code>prompts/PROMPT-LOG.md</code>). Under each is how I would write it now, applying the principles in Section&nbsp;1.</p>
+
+<h3>A1. Understand the project before changing it (7 Oct)</h3>
+<div class="quote">see my design doc and proposal and understand my project first and then see to how much extent my project is done and then plan what to do divide them into commits</div>
+<div class="label">Result: status report against the design doc; found 80–115 m error hidden by tests that could not fail; 21-commit plan.</div>
+<div class="better">Read cs5103.pdf (proposal) and desgin_doc.pdf (Phase 3 design) and the code in MultiStaticRadarSimulator/. For each module in design doc §1.3, tell me whether it is done, partial or missing, with evidence (file, test or command output). Build it and run the tests and the CLI — don't trust the README. Then propose small commits, most important first, saying how each will be verified. Don't modify any files yet.</div>
+
+<h3>A2. Implement with checks and a change record (7 Oct)</h3>
+<div class="quote">yes start and  write the changes if there is file like track.md or somthing whenre previous changes are noted</div>
+<div class="label">Result: 4 commits (build fix, new solver, 1 mm tests, receiver-ID fix); tests 76 → 90; error ~100 m → 0.0000 m.</div>
+<div class="better">Do commits 1–4 from the plan, one at a time. After each, run ./gradlew test and the CLI and show me the numbers, then commit with a message that says what changed and why, and add a bullet to Week 5 of WEEKLY-LOG.md. If a test fails, stop and explain whether the code or the test is wrong before fixing either.</div>
+
+<h3>A3. Report a problem precisely (7 Oct)</h3>
+<div class="quote">i want you to use shervan0714 github  not karthiks</div>
+<div class="label">Result: push account and remote were already correct; found that commits were not linked to my account (wrong commit email) and fixed it for new commits.</div>
+<div class="better">On GitHub I see "karthiks" next to my commits in the commit list (screenshot attached). Check which account the pushes and commit authors use, and make sure everything in this repo is attributed to my GitHub account shervan0714.</div>
+
+<h3>A4. Plan first, I decide (8 Oct)</h3>
+<div class="quote">(pasted the TA's mid-evaluation announcement) do necessary work first say me what is there to do then i will say to do or not</div>
+<div class="label">Result: checklist of deliverables vs. what already exists — e.g. no prompts were tracked in git, which led to the prompt log.</div>
+<div class="better">Here are the mid-evaluation guidelines. Map each required item to what already exists in my repo (with file paths) and what is missing. Estimate the effort for each missing item and suggest an order given the Sunday deadline. Don't create or change anything until I choose.</div>
+
+<h3>A5. Safe refactoring (11 Oct)</h3>
+<div class="quote">format the folder and file strucutre properly if it isn not in a clean way , ,create a file and say what each file is for</div>
+<div class="label">Result: model package split into the design doc's modules with git mv (27 renames, history kept); all 111 tests still pass; docs/PROJECT-STRUCTURE.md written.</div>
+<div class="better">Reorganise the source packages to match the modules in my design doc §1.3. Use git mv so history is kept, change nothing except packages and imports, and run all tests before committing. Then write docs/PROJECT-STRUCTURE.md explaining every file, so I can find my way around during the live code task.</div>
+
+<h3>A6. Asking to understand, not just to fix (template I plan to use while preparing for the viva)</h3>
+<div class="better">Explain BaselineLocalizationModel to me as if I'm presenting it: what equation each receiver gives, why Levenberg–Marquardt is used instead of plain gradient descent, why it starts from several points, and what the residual and condition number tell me. Then give me two questions an examiner might ask about it, and let me answer before you check.</div>
+
+<p class="note">Prompt checklist I now follow: (1) give context and point to files; (2) ask for understanding or a plan before code; (3) one concern per prompt; (4) state how the result will be checked; (5) say what must not change; (6) ask "why" until I can explain it; (7) log the prompt with the commit it produced.</p>
+</div>
+
+</body>
+</html>

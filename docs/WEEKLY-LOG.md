@@ -188,6 +188,7 @@
 ### Work Completed
 - Restructured the code to match the design doc modules: the `model` package held 21 classes from six modules, so it was split into `scenario`, `measurement`, `localization`, `experiment` and `persistence` (plus `ModelDescriptor` in `core`). Tests moved with their classes. Files were moved with `git mv` so their history is kept; behaviour is unchanged, and all 111 tests pass.
 - Tidied the repository layout: the weekly log and screenshots moved into `docs/`, the README architecture table now names each package, and a new `docs/PROJECT-STRUCTURE.md` explains every folder and file and where to make common changes. Removed generated build output and caches from old Gradle versions (not tracked in git).
+- Started tracking prompts in git: `prompts/PROMPT-LOG.md` records each prompt to the AI assistant verbatim, with its date, goal, outcome, how it was checked, the commit it produced, and a rewritten "better version". Wrote the mid-evaluation Principles & Practices document (`docs/mid-eval/`, 3 pages including the prompt appendix) covering prompt engineering, debugging, Git and testing/refactoring/documentation, using real cases from this project.
 
 ### Contributions
 (To be filled in)
