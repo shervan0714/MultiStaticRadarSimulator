@@ -1,134 +1,168 @@
-# Prompt Log
+# Prompt Log — Interactive Multistatic Radar Simulator
 
-I use an AI coding assistant (Claude Code, running inside this repository) to help build the simulator. This log keeps the prompts I gave it under version control next to the code they produced, so anyone can see *what I asked*, *what came back*, *how I checked it*, and *which commit it led to*.
+**Course:** CS5013  
+**Project:** Interactive Multistatic Radar Simulator for 3D Drone Localization and Model Evaluation
 
-**How I use this log**
+> **Note:** The prompts below are project-specific prompts reconstructed from the development issues and decisions recorded in the project notes and Git history. They are not necessarily verbatim copies of every historical prompt. Keep the original historical entries separate where applicable. Use these prompts as templates when the same situation arises, and record the actual response, code change, test result, and commit after each real interaction.
 
-- Prompts are copied **exactly as I typed them**, typos included, so the log is an honest record.
-- *Outcome* is what the assistant actually did. *Checked* is how the result was verified before I accepted it.
-- *Better version* is how I would write the same prompt now, after seeing what went wrong or what was unclear. These are rewrites for learning, not prompts I sent.
-- New entries are added in the same commit as the change they produced, or in the next one.
+## 1. Understanding the project
 
-Tool: Claude Code (Opus). For the mid-evaluation, only Gemini Pro is allowed, so the same principles will be applied there.
+### Prompt 1 — Understand the requirements
 
----
+I am working on an Interactive Multistatic Radar Simulator for 3D Drone Localization. First read my project proposal and Phase 3 design document. Help me understand what exactly we are supposed to build and what the stakeholder is expecting. Explain the main features in simple terms. Dont make any code changes yet.
 
-## P1 — Understand the project before changing anything
-**Date:** 7 Oct 2026 · **Commits:** none (analysis only)
+### Prompt 2 — Compare the implementation with the design
 
-> see my design doc and proposal and understand my project first and then see to how much extent my project is done and then plan what to do divide them into commits
+Now compare the actual code with the module responsibilities in section 1.3 of my design document. For each module, tell me whether it is complete, partially implemented or missing. Give the relevant file or test as evidence. Please dont assume a feature is complete just because a class or interface exists.
 
-**Goal:** get an honest status check against my own design doc before the mid-demo, instead of jumping into code.
-**Outcome:** the assistant read the proposal, design doc, course guide and all source files, built the project and ran the tests and the CLI. It found that the localization was **80–115 m off on noiseless data**, that the tests still passed because they only checked the error was a finite number, that `gradlew` failed on my JDK 26, and that receiver IDs were really list indices. It then proposed 21 commits, ordered by priority.
-**Checked:** I compared the status table against my design doc's module list and test plan, and ran the CLI myself to see the error numbers.
-**What I learned:** "all tests pass" meant nothing here — the tests could not fail. Asking for understanding *first* exposed this.
+### Prompt 3 — Plan the work and commits
 
-**Better version:**
-> Read `cs5103.pdf` (proposal) and `desgin_doc.pdf` (Phase 3 design) and the code in `MultiStaticRadarSimulator/`. For each module in design doc §1.3, tell me whether it is done, partial or missing, with evidence (file, test, or command output). Build it and run the tests and the CLI — don't trust the README. Then propose a list of small commits, most important first, with what each one changes and how we'll verify it. Don't modify any files yet.
+Based on the code review, help me decide what should be fixed first before the mid-demo. Divide the work into small commits in priority order. For each one, mention the files likely to change, the expected behaviour and how I can verify it. Dont execute the changes until I review the plan.
 
----
+### Prompt 4 — Understand the data flow
 
-## P2 — Start the work, and record what changes
-**Date:** 7 Oct 2026 · **Commits:** `6e250b7`, `85fccdb`, `f19e76b`, `a5ae617`
+Explain how my actual code moves data from scenario configuration to trajectory generation, measurement generation, localization, evaluation and visualization. Use the real class names from the repository and point out any difference between the intended architecture and what is implemented.
 
-> yes start and  write the changes if there is file like track.md or somthing whenre previous changes are noted
+## 2. Localization accuracy and solver debugging
 
-**Goal:** do commits 1–4 of the plan (build fix, localization solver, real tests, receiver-ID fix) and keep a change record.
-**Outcome:** the assistant found no changelog, so it used `WEEKLY-LOG.md` and added one entry per commit. It upgraded the Gradle wrapper, replaced the gradient-descent localizer with a Levenberg–Marquardt least-squares solver, tightened tests to a 1 mm tolerance, and fixed receiver matching and time stamps.
-**Checked:** test count went 76 → 90, all passing; CLI error went from ~100 m to 0.0000 m for 3, 4 and 5 receivers. One new test failed on the first try (a target at ground level was expected to be "unstable"); probing showed the solver was right and the *test assumption* was wrong, so the test was corrected, not the code.
-**What I learned:** a failing test is information, not something to silence — first decide whether the code or the expectation is wrong.
+### Prompt 5 — Investigate the large localization error
 
-**Better version:**
-> Do commits 1–4 from the plan, one at a time. After each: run `./gradlew test` and the CLI, show me the numbers, then commit with a message that says what changed and why. Record each change as a bullet in the Week 5 section of `WEEKLY-LOG.md`. If a test fails, stop and explain whether the code or the test is wrong before fixing either.
+I ran the CLI on noiseless data and the localization error was around 80 to 115 metres, even though the tests were passing. This is a serious issue because the actual drone position is known in the simulation. Inspect the solver and existing tests first. Help me find why such a large error is not being caught. Dont change the code before explaining the likely root cause.
 
----
+### Prompt 6 — Improve the accuracy test
 
-## P3 — Make the commit history readable
-**Date:** 7 Oct 2026 · **Commits:** pushed `mid-demo-fixes`
+The current tests seem to allow a finite localization error without checking if the estimated position is actually correct. Help me improve the test for a valid noiseless synthetic scenario, where the estimate should match the known target position within 1 mm. Use deterministic inputs and explain why this tolerance is suitable for this test. Dont claim the test passes until it has been run.
 
-> push and commit the changes with good readable commit messaged
+### Prompt 7 — Check the gradient descent implementation
 
-**Outcome:** everything was already committed; the branch was pushed. Commit messages follow `type(scope): summary` with a body explaining *why*.
-**What I learned:** compare with my own earlier message `rewrote localization math to use gradient descent, accuracy is way better now` — it claimed an improvement that was never measured (the error was still ~100 m). Now messages state measured results.
+Inspect my existing gradient descent localization implementation. Check the objective function, gradient, step size and convergence condition. Since the error is very large even without measurement noise, help me determine whether the problem is in the optimization method or in how measurements are passed to it. Compare possible approaches before suggesting a replacement.
 
----
+### Prompt 8 — Replace the solver carefully
 
-## P4 — Account and authorship
-**Date:** 7 Oct 2026 · **Commits:** none (configuration)
+We have identified that the existing gradient descent approach is not giving reliable localization results. Help me replace it with a Levenberg–Marquardt least-squares solver for the bistatic-range measurements. Keep the existing `LocalizationModel` interface if possible. Explain the residual equation, Jacobian and convergence checks before proposing the code change.
 
-> i want you to use shervan0714 github  not karthiks
+### Prompt 9 — Verify the new solver
 
-**Outcome:** the assistant checked the push credentials, remote and commit authors — all were already `shervan0714`. But the GitHub API showed my commits were **not linked to my account**, because they used the email `shervan0714@github.com`, which isn't on my account. It switched this repo to my GitHub no-reply email so new commits link to me.
-**What I learned:** my prompt named a symptom without saying where I saw it, so the assistant had to investigate everything. It still found a real problem I didn't know about.
+After changing the solver, run the same noiseless scenarios as before, including cases with 3, 4 and 5 receivers. Show the actual localization errors and compare them with the earlier results. Check the tests as well. Dont say the new method is better just because it uses a different algorithm; I want numerical evidence.
 
-**Better version:**
-> On GitHub I see "karthiks" next to my commits in the commit list (screenshot attached). Check which account the pushes and commit authors use and make sure everything in this repo is attributed to my GitHub account shervan0714.
+## 3. Debugging incorrect test assumptions
 
----
+### Prompt 10 — Investigate the ground-level target test
 
-## P5 — Finish the mid-demo work
-**Date:** 7 Oct 2026 · **Commits:** `9c2660b`, `b369519`, `39455f1`, `c4b0567`, `64e3836`
+One localization test expects a target at ground level to return a numerically unstable status. Before changing the solver, check whether this expectation is actually correct. Work through the geometry and measurements and explain whether the code is wrong or the test assumption is wrong. Dont modify anything until we understand the case.
 
-> do all commits before mid demo and push it to main
+### Prompt 11 — Correct the test only if needed
 
-**Outcome:** geometry validator fix, the GUI rebuilt around the experiment pipeline, a 3D view in the correct East/North/Up frame, the results table with save/load/export, and mid-demo docs with an honest gap list. Each commit was tested and pushed, then `main` was fast-forwarded.
-**Checked:** 111 tests passing; GUI checked from off-screen renders (default run, bad input, two receivers, save → load → export round trip).
+After investigating the ground-level target case, update the test only if the expected behaviour is incorrect. Explain why the revised expectation makes sense and ensure the test still checks useful behaviour. Run the focused test and the complete test suite if the environment allows it.
 
----
+## 4. Receiver IDs and measurement timestamps
 
-## P6 — See it running
-**Date:** 7–8 Oct 2026
+### Prompt 12 — Match measurements by receiver ID
 
-> i want to see the simulation can u run and show me how the application is right now
+I suspect measurements may be matched to receivers using their list positions instead of their actual receiver IDs. Inspect `BaselineMeasurementModel`, `Measurement`, `ReceiverMeasurement` and the localization code. Explain what can go wrong if the receiver list is reordered, and suggest a fix that keeps every observation associated with the correct receiver.
 
-> once run the project
+### Prompt 13 — Add receiver-order and timestamp tests
 
-**Outcome:** the assistant launched the app and sent screenshots of three states (now in `docs/images/`).
-**What I learned:** looking at the running app is a different check from the tests — tests cannot tell whether the 3D view looks right. (The upside-down Y axis fixed in `39455f1` was caught the same way, from a rendered screenshot.)
+Add regression tests for receiver matching. Create a scenario where the receiver list is reordered but receiver IDs remain the same, and check that the observations are still associated correctly. Also verify that measurement time corresponds to the correct simulation step. Run the tests and report the actual result.
 
----
+## 5. Geometry validation
 
-## P7 — Plan before acting (mid-evaluation guidelines)
-**Date:** 8 Oct 2026 · **Commits:** none
+### Prompt 14 — Review the coplanarity check
 
-> *(pasted the TA's mid-evaluation announcement)* do necessary work first say me what is there to do then i will say to do or not
+Inspect `GeometryValidator`. The simulator needs to detect layouts that may cause ambiguous 3D localization. Check whether the coplanarity check considers the transmitter as well as the receivers, and whether the validator is actually used by the localization pipeline. Explain the current logic before proposing changes.
 
-**Outcome:** a checklist mapping each deliverable to what already exists in the repo and what is missing (e.g. no prompts were tracked in git — which is why this file exists).
-**What I learned:** asking for a plan and approving it myself keeps me in control of the project and makes me read what is being proposed.
+### Prompt 15 — Test mirror ambiguity
 
----
+I want to test a case where the sensors lie in the same horizontal plane. A target and its mirror position across that plane may produce the same bistatic ranges. Help me build a deterministic test and inspect what the current solver returns. Explain why getting a finite position does not prove that the geometry is reliable.
 
-## P8 — Clean up the repository
-**Date:** 11 Oct 2026 · **Commits:** `ef46a4f`, `1412818`
+### Prompt 16 — Check under-constrained status handling
 
-> why are they many empty folders in the project remove not needed
+Inspect `GeometryValidator`, `Status` and the code which displays localization results. Check how the project handles invalid input, under-constrained geometry and numerical instability. Make sure the code uses the status values that actually exist in the enum. Suggest tests so an unreliable estimate is not silently shown as a normal successful result.
 
-> format the folder and file strucutre properly if it isn not in a clean way , ,create a file and say what each file is for
+## 6. Gradle and JDK compatibility
 
-**Outcome:** the empty folders were all generated Gradle output (not in git); the assistant cleaned them. It then split the 21-class `model` package into the design doc's modules using `git mv` (history kept), and wrote `docs/PROJECT-STRUCTURE.md`.
-**Checked:** 111 tests still passing after the move; git recorded 27 renames, not deletions.
-**What I learned:** "why" questions are worth asking — the answer (generated build output) meant nothing in git needed changing.
+### Prompt 17 — Investigate the Gradle/JDK failure
 
-**Better version:**
-> Reorganise the source packages to match the modules in my design doc §1.3. Use `git mv` so history is kept, change nothing except packages and imports, and run all tests before committing. Then write `docs/PROJECT-STRUCTURE.md` explaining every file, so I can find my way around during the live code task.
+My Gradle wrapper is failing when I try to build the project with JDK 26. Check the exact error, Gradle wrapper version, `build.gradle` and the Java version being used. Help me determine whether this is a Gradle compatibility problem or an application-code problem. Dont change the build files before explaining the cause.
 
----
+### Prompt 18 — Fix the build with minimal changes
 
-## P9 — This document
-**Date:** 11 Oct 2026
+Based on the compatibility issue, help me choose a suitable Gradle version while keeping the existing JavaFX and other dependencies working. Dont upgrade unrelated libraries unnecessarily. After the change, run the build and tests if possible, and tell me which errors remain instead of assuming the issue is solved.
 
-> do 1+2  but right them as  a student who is understanding the project and using help of ai to do the project ,write prompts also in that way
+## 7. GUI integration and 3D visualization
 
-**Outcome:** this prompt log (tracked in git) and the Principles & Practices document for the mid-evaluation.
+### Prompt 19 — Connect the GUI to the experiment pipeline
 
----
+Inspect `SimulatorController`, `ScenarioEditor` and `ExperimentRunner`. Help me connect the UI to the actual scenario and experiment pipeline so that clicking Run uses the same trajectory, measurement, localization and evaluation logic as the backend. Preserve the existing module boundaries and avoid duplicating numerical calculations inside the UI.
 
-## Prompt checklist I now follow
+### Prompt 20 — Debug the inverted 3D axis
 
-1. **Context first** — point to the design doc / files; say what the project is for.
-2. **Ask for understanding or a plan before code** — "don't modify files yet".
-3. **One concern per prompt** — small enough to become one commit.
-4. **State how it will be checked** — tests, tolerance, command output, screenshot.
-5. **Say what not to touch** — e.g. "only packages and imports".
-6. **Ask "why" when I don't understand** — I must be able to explain every change in the viva.
-7. **Log the prompt** here with the commit it produced.
+I noticed that the 3D visualization does not seem to match the coordinate convention in my design document: +X is East, +Y is North and +Z is upward. Inspect `SceneTransform` and `Visualization3D`. Check how world coordinates are mapped to the JavaFX scene and help me find any inverted axis or wrong sign. Dont change the radar calculations just to fix a display issue.
+
+### Prompt 21 — Verify the rendered scene
+
+After the coordinate fix, launch the application and inspect the rendered output if the environment supports it. Check transmitter and receiver locations, drone trajectory and the displayed axes. Unit tests alone may not catch a visual inversion. If you cannot launch the GUI or inspect a screenshot, clearly tell me which checks you could not perform.
+
+## 8. Results, persistence and CSV export
+
+### Prompt 22 — Improve the results table
+
+Inspect `EvaluationModule`, `EvaluationResult` and `ResultsPanel`. Help me display the error at each time step along with mean, maximum and RMS localization errors. Show residual, condition number and model version only where these values are available in the actual result objects. Keep the UI separate from the numerical calculations.
+
+### Prompt 23 — Test scenario save and load
+
+Inspect `ScenarioPersistence` and the scenario classes. Check whether transmitter, receiver positions, orientations and drone parameters are preserved when a scenario is saved and loaded. Identify fields that may be lost. Add a round-trip test using non-default values and verify the result instead of assuming persistence works.
+
+### Prompt 24 — Check CSV export
+
+Review the CSV export in my project. I want each row to contain the relevant simulation time, ground-truth position, estimated position, localization error and model identity where available. Compare the exported values with `ExperimentRecord` and `EvaluationResult` rather than recalculating them independently in the UI. Test a small experiment and inspect the actual CSV output.
+
+## 9. Git and package refactoring
+
+### Prompt 25 — Review the Git history
+
+I have made several changes before the mid-demo. Check the existing Git history and working tree, and help me understand which changes are already committed. Suggest clear commit messages that explain the purpose of each change. Dont create duplicate commits or claim something is committed unless Git confirms it.
+
+### Prompt 26 — Check GitHub attribution
+
+I want future commits to be attributed correctly to my GitHub account, `shervan0714`. Check the configured Git author name, email and remote URL. Explain the difference between the account used for pushing and the email attached to a commit. Help me correct the configuration for future commits without rewriting existing history unnecessarily.
+
+### Prompt 27 — Investigate empty folders
+
+There are empty folders in my project and I am not sure if they are needed. Check whether they are tracked source folders, generated Gradle output or cache directories. Explain which ones are safe to clean and make sure no source files or important configuration are removed.
+
+### Prompt 28 — Reorganize the old model package
+
+My old `model` package contains classes with different responsibilities. Compare the package structure with section 1.3 of my design document. Help me split the classes into scenario, measurement, localization, experiment and persistence packages, while keeping shared entities in `core` and utilities in `util`. Use `git mv` where appropriate and avoid changing application behaviour during the refactor.
+
+### Prompt 29 — Verify the package refactor
+
+After moving the classes, check package declarations, imports, test locations and references to the old package. Run the complete test suite and inspect the Git diff to confirm that the change is mainly a package reorganization. Help me update `docs/PROJECT-STRUCTURE.md` so I can locate files quickly during live coding.
+
+## 10. Prompt logging and evaluation preparation
+
+### Prompt 30 — Record the development interaction
+
+Help me update `prompts/PROMPT-LOG.md` for this development step. Record the actual prompt, the issue I was trying to solve, what the AI suggested, what I actually changed, how I verified it and the related commit if there is one. Keep original prompts unchanged and put improved versions separately. Dont invent test results or say I checked something if I did not.
+
+### Prompt 31 — Practise a live coding task
+
+I have my CS5013 mid-evaluation soon and the TA may ask me to make a small modification in the existing code. Give me a task based on one of my actual modules, such as trajectory generation, measurement matching, geometry validation or evaluation. Dont show the solution immediately. Let me explain my approach first, then point out missing edge cases and ask how I would test it.
+
+### Prompt 32 — Understand AI-generated code before using it
+
+I received this code from an AI assistant and want to make sure I understand it before using it. Explain the purpose of each important method and the reasoning behind the implementation. Point out assumptions, edge cases and parts that need independent verification. Then ask me a few questions to check whether I have understood the code.
+
+### Prompt 33 — Final project review
+
+Review my radar simulator against the project proposal and design document. Make a table with each requirement, relevant source files, current implementation status and available test evidence. Separate completed features from partial and pending work. Give me the five most important things I should fix or be prepared to explain during the mid-evaluation.
+
+## Verification checklist for each real AI-assisted change
+
+- [ ] I understand the problem and can explain it in my own words.
+- [ ] I checked the relevant source code and design requirements.
+- [ ] I reviewed the proposed diff before accepting the change.
+- [ ] I ran the focused test and recorded the real result.
+- [ ] I ran the full test suite when feasible.
+- [ ] I updated the prompt log with what actually happened.
+- [ ] I did not describe a planned or suggested change as completed.
