@@ -1,4 +1,4 @@
-# Mid-Demo — 9 October 2026
+# Mid-Evaluation — week of 12 October 2026
 
 ## Demo script (about 5 minutes)
 

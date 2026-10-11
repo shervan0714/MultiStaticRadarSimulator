@@ -186,7 +186,8 @@
 ## Week 6: Oct 11 - Oct 17, 2026
 
 ### Work Completed
-(To be filled in)
+- Restructured the code to match the design doc modules: the `model` package held 21 classes from six modules, so it was split into `scenario`, `measurement`, `localization`, `experiment` and `persistence` (plus `ModelDescriptor` in `core`). Tests moved with their classes. Files were moved with `git mv` so their history is kept; behaviour is unchanged, and all 111 tests pass.
+- Tidied the repository layout: the weekly log and screenshots moved into `docs/`, the README architecture table now names each package, and a new `docs/PROJECT-STRUCTURE.md` explains every folder and file and where to make common changes. Removed generated build output and caches from old Gradle versions (not tracked in git).
 
 ### Contributions
 (To be filled in)

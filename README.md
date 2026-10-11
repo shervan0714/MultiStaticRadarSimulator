@@ -8,6 +8,8 @@ You place a transmitter and any number of receivers, define a drone trajectory, 
 
 The measurement and localization models are replaceable and carry a name and version, so a new formulation can be compared against an earlier one on the same scenario.
 
+![Simulator window: scenario editor, 3D view and per-step results](docs/images/default-run.png)
+
 ## Quick start
 
 Requires **JDK 17 or newer** (tested on JDK 26). No separate Gradle install is needed; the wrapper downloads Gradle 9.3.0 on first use.
@@ -51,17 +53,21 @@ Right-handed Cartesian frame in metres with the origin at the transmitter frame 
 
 ## Architecture
 
-| Module | Classes | Responsibility |
-|---|---|---|
-| Scenario model | `Scenario`, `Transmitter`, `Receiver`, `ui.ScenarioConfig` | Sensor positions and parameters, target trajectory |
-| Trajectory engine | `TrajectoryModel`, `ConstantVelocityTrajectory` | Target position and velocity at time *t* |
-| Measurement model | `MeasurementModel`, `BaselineMeasurementModel` | Per-receiver bistatic range, time delay, received power |
-| Localization model | `LocalizationModel`, `BaselineLocalizationModel` | Position estimate with status, residual and condition number |
-| Geometry validation | `GeometryValidator` | Rejects under-constrained layouts; warns about mirror ambiguity |
-| Experiment runner | `ExperimentRunner`, `ExperimentRecord` | Runs every time step and records truth, measurement, estimate, model versions and error |
-| Evaluation | `EvaluationModule`, `EvaluationResult` | Mean, max and RMS error; successful vs failed steps |
-| Persistence | `ScenarioPersistence` | Scenario save/load, CSV and summary export |
-| UI / visualization | `SimulatorController`, `ScenarioEditor`, `Visualization3D`, `SceneTransform`, `ResultsPanel` | Form, 3D view, results table |
+Each design doc module is one package under `src/main/java/com/radar/simulator/`:
+
+| Module | Package | Main classes | Responsibility |
+|---|---|---|---|
+| Scenario model | `scenario`, `core` | `Scenario`, `Transmitter`, `Receiver` | Sensor positions and parameters, target trajectory |
+| Trajectory engine | `scenario` | `TrajectoryModel`, `ConstantVelocityTrajectory` | Target position and velocity at time *t* |
+| Measurement model | `measurement` | `MeasurementModel`, `BaselineMeasurementModel` | Per-receiver bistatic range, time delay, received power |
+| Localization model | `localization` | `LocalizationModel`, `BaselineLocalizationModel` | Position estimate with status, residual and condition number |
+| Geometry validation | `localization` | `GeometryValidator` | Rejects under-constrained layouts; warns about mirror ambiguity |
+| Experiment runner | `experiment` | `ExperimentRunner`, `ExperimentRecord` | Runs every time step and records truth, measurement, estimate, model versions and error |
+| Evaluation | `experiment` | `EvaluationModule`, `EvaluationResult` | Mean, max and RMS error; successful vs failed steps |
+| Persistence | `persistence` | `ScenarioPersistence` | Scenario save/load, CSV and summary export |
+| UI / visualization | `ui` | `SimulatorController`, `ScenarioEditor`, `Visualization3D`, `ResultsPanel` | Form, 3D view, results table |
+
+[docs/PROJECT-STRUCTURE.md](docs/PROJECT-STRUCTURE.md) explains every folder and file.
 
 Measurements are matched to receivers by **receiver ID**, so reordering receivers can never attach an observation to the wrong one. A localization result is never silently wrong: besides `SUCCESS` it can report `UNDER_CONSTRAINED`, `NUMERICALLY_UNSTABLE` or `INVALID_INPUT`.
 
@@ -86,7 +92,7 @@ Until the stakeholder's formulation is available, the baseline uses bistatic ran
 
 ## Status
 
-Mid-demo (9 Oct 2026): the full workflow above works end to end. See [docs/MID-DEMO.md](docs/MID-DEMO.md) for the demo script and the list of known gaps, and [WEEKLY-LOG.md](WEEKLY-LOG.md) for the change history.
+Mid-evaluation (week of 12 Oct 2026): the full workflow above works end to end. See [docs/MID-DEMO.md](docs/MID-DEMO.md) for the demo script and the list of known gaps, and [docs/WEEKLY-LOG.md](docs/WEEKLY-LOG.md) for the change history.
 
 ## Contact
 
