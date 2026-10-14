@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>System Architecture</title>
+<style>
+  @page { size: 1600px 1010px; margin: 0; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  svg { display: block; }
+</style></head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1010" width="1600" height="1010">
+<defs>
+  <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#37474f"/></marker>
+  <marker id="ah-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c62828"/></marker>
+  <style>
+    text { font-family: "Segoe UI", Arial, sans-serif; fill: #263238; }
+    .h1 { font-size: 26px; font-weight: 700; fill: #1f3a68; }
+    .h2 { font-size: 14px; fill: #546e7a; }
+    .col { font-size: 13px; font-weight: 700; letter-spacing: 1.5px; fill: #78909c; }
+    .t { font-size: 15px; font-weight: 700; }
+    .s { font-size: 12.5px; }
+    .c { font-size: 12px; font-family: Consolas, "Courier New", monospace; fill: #37474f; }
+    .lbl { font-size: 12.5px; }
+  </style>
+</defs>
+<rect width="1600" height="1010" fill="#ffffff"/>
+<text x="800.0" y="38" text-anchor="middle" class="h1">Multistatic Radar Simulator — System Architecture &amp; Data Flow</text>
+<text x="800.0" y="62" text-anchor="middle" class="h2">E. Sai Shervan (CS24B073) · CS5013 · Packages under com.radar.simulator · same pipeline for the GUI and the CLI</text>
+<text x="180" y="98" text-anchor="middle" class="col">1 · CONFIGURE</text>
+<rect x="40" y="110" width="280" height="66" rx="9" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="180.0" y="133" text-anchor="middle" class="t" style="font-size:15px;fill:#2e7d32">GUI form</text>
+<text x="180.0" y="153" text-anchor="middle" class="c">ui.ScenarioEditor</text>
+<text x="180.0" y="170" text-anchor="middle" class="s">TX, receivers, drone, timing</text>
+<rect x="40" y="192" width="280" height="66" rx="9" fill="#fafafa" stroke="#616161" stroke-width="2"/>
+<text x="180.0" y="215" text-anchor="middle" class="t" style="font-size:15px;fill:#616161">Command line</text>
+<text x="180.0" y="235" text-anchor="middle" class="c">CLISimulatorApp</text>
+<text x="180.0" y="252" text-anchor="middle" class="s">--receivers --duration --timestep</text>
+<rect x="40" y="274" width="280" height="66" rx="9" fill="#eceff1" stroke="#455a64" stroke-width="2"/>
+<text x="180.0" y="297" text-anchor="middle" class="t" style="font-size:15px;fill:#455a64">Saved scenario file</text>
+<text x="180.0" y="317" text-anchor="middle" class="c">persistence.ScenarioPersistence</text>
+<text x="180.0" y="334" text-anchor="middle" class="s">load .properties</text>
+<rect x="40" y="380" width="280" height="82" rx="9" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="180.0" y="403" text-anchor="middle" class="t" style="font-size:15px;fill:#2e7d32">Build &amp; check input</text>
+<text x="180.0" y="423" text-anchor="middle" class="c">ui.ScenarioConfig.toScenario()</text>
+<text x="180.0" y="440" text-anchor="middle" class="s">numbers, unique IDs, timing</text>
+<rect x="40" y="512" width="280" height="88" rx="9" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="180.0" y="535" text-anchor="middle" class="t" style="font-size:15px;fill:#1565c0">Scenario</text>
+<text x="180.0" y="555" text-anchor="middle" class="c">scenario.Scenario</text>
+<text x="180.0" y="572" text-anchor="middle" class="s">Transmitter + Receivers</text>
+<text x="180.0" y="589" text-anchor="middle" class="s">+ TrajectoryModel</text>
+<rect x="40" y="668" width="280" height="70" rx="9" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+<text x="180.0" y="691" text-anchor="middle" class="t" style="font-size:14px;fill:#c62828">Invalid input</text>
+<text x="180.0" y="711" text-anchor="middle" class="s">red message names the bad field</text>
+<text x="180.0" y="728" text-anchor="middle" class="s">run is not started</text>
+<path d="M320,143 L345,143 L345,421 L322,421" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M320,225 L345,225 L345,421 L322,421" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M320,307 L345,307 L345,421 L322,421" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M180,462 L180,510" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M40,421 L22,421 L22,703 L38,703" fill="none" stroke="#c62828" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ah-red)"/>
+<text x="26" y="640" text-anchor="start" class="lbl" style="fill:#c62828">bad value</text>
+<text x="710" y="98" text-anchor="middle" class="col">2 · RUN THE EXPERIMENT</text>
+<polygon points="710,108.0 860.0,160 710,212.0 560.0,160" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2"/>
+<text x="710" y="157" text-anchor="middle" class="t" style="fill:#6a1b9a">Geometry valid?</text>
+<text x="710" y="176" text-anchor="middle" class="c">localization.GeometryValidator</text>
+<path d="M320,556 L370,556 L370,160 L558,160" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="896" y="112" width="186" height="98" rx="9" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+<text x="989.0" y="135" text-anchor="middle" class="t" style="font-size:14px;fill:#c62828">Refused</text>
+<text x="989.0" y="155" text-anchor="middle" class="s">explicit Status:</text>
+<text x="989.0" y="172" text-anchor="middle" class="s">UNDER_CONSTRAINED</text>
+<text x="989.0" y="189" text-anchor="middle" class="s">INVALID_INPUT</text>
+<text x="989.0" y="206" text-anchor="middle" class="s">NUMERICALLY_UNSTABLE</text>
+<path d="M860,160 L894,160" fill="none" stroke="#c62828" stroke-width="2" marker-end="url(#ah-red)"/>
+<text x="876" y="151" text-anchor="middle" class="lbl" style="fill:#c62828">no</text>
+<rect x="400" y="248" width="620" height="566" rx="12" fill="#fffaf3" stroke="#e65100" stroke-width="2" stroke-dasharray="8 6"/>
+<text x="710" y="274" text-anchor="middle" class="t" style="fill:#e65100">experiment.ExperimentRunner — repeat for every time step i (t = i · Δt)</text>
+<path d="M710,212 L710,246" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<text x="722" y="236" text-anchor="start" class="lbl" style="fill:#37474f">yes  (coplanar sensors → warning)</text>
+<rect x="450" y="290" width="520" height="70" rx="9" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="710.0" y="313" text-anchor="middle" class="t" style="font-size:15px;fill:#1565c0">① True drone position</text>
+<text x="710.0" y="333" text-anchor="middle" class="c">scenario.TrajectoryModel.getPosition(t)</text>
+<text x="710.0" y="350" text-anchor="middle" class="s">constant velocity: p(t) = p₀ + v · t</text>
+<rect x="450" y="384" width="520" height="88" rx="9" fill="#e0f2f1" stroke="#00796b" stroke-width="2"/>
+<text x="710.0" y="407" text-anchor="middle" class="t" style="font-size:15px;fill:#00796b">② Simulate measurements</text>
+<text x="710.0" y="427" text-anchor="middle" class="c">measurement.MeasurementModel.generate()</text>
+<text x="710.0" y="444" text-anchor="middle" class="s">bistatic range = |p − TX| + |p − RX|, delay = range / c, power</text>
+<text x="710.0" y="461" text-anchor="middle" class="s">one ReceiverMeasurement per receiver, keyed by receiver ID</text>
+<rect x="450" y="496" width="520" height="88" rx="9" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2"/>
+<text x="710.0" y="519" text-anchor="middle" class="t" style="font-size:15px;fill:#6a1b9a">③ Estimate position</text>
+<text x="710.0" y="539" text-anchor="middle" class="c">localization.LocalizationModel.estimate()</text>
+<text x="710.0" y="556" text-anchor="middle" class="s">Levenberg–Marquardt least squares on the range ellipsoids</text>
+<text x="710.0" y="573" text-anchor="middle" class="s">→ EstimationResult: position, Status, residual, condition no.</text>
+<rect x="450" y="608" width="520" height="70" rx="9" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="710.0" y="631" text-anchor="middle" class="t" style="font-size:15px;fill:#e65100">④ Compare with the truth</text>
+<text x="710.0" y="651" text-anchor="middle" class="s">error = |true position − estimate|</text>
+<text x="710.0" y="668" text-anchor="middle" class="s">(NaN if Status ≠ SUCCESS, excluded from metrics)</text>
+<rect x="450" y="702" width="520" height="88" rx="9" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="710.0" y="725" text-anchor="middle" class="t" style="font-size:15px;fill:#e65100">⑤ Record the step</text>
+<text x="710.0" y="745" text-anchor="middle" class="c">experiment.ExperimentRecord</text>
+<text x="710.0" y="762" text-anchor="middle" class="s">time, truth, measurement, estimate, error,</text>
+<text x="710.0" y="779" text-anchor="middle" class="s">measurement + localization model name/version</text>
+<path d="M710,360 L710,382" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M710,472 L710,494" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M710,584 L710,606" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M710,678 L710,700" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M450,746 L424,746 L424,325 L448,325" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<text x="416" y="536" text-anchor="middle" class="lbl" transform="rotate(-90 416 536)" style="fill:#37474f">next time step</text>
+<rect x="450" y="846" width="520" height="76" rx="9" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="710.0" y="869" text-anchor="middle" class="t" style="font-size:15px;fill:#e65100">Evaluate the run</text>
+<text x="710.0" y="889" text-anchor="middle" class="c">experiment.EvaluationModule → EvaluationResult</text>
+<text x="710.0" y="906" text-anchor="middle" class="s">mean / max / RMS error, localized vs failed steps</text>
+<path d="M710,814 L710,844" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<text x="1320" y="98" text-anchor="middle" class="col">3 · SHOW &amp; SAVE RESULTS</text>
+<rect x="1090" y="248" width="460" height="140" rx="9" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="1320.0" y="271" text-anchor="middle" class="t" style="font-size:15px;fill:#2e7d32">GUI  (ui.SimulatorController)</text>
+<text x="1320.0" y="291" text-anchor="middle" class="s">Visualization3D: sensors, true path, estimates, playback</text>
+<text x="1320.0" y="308" text-anchor="middle" class="s">ResultsPanel: per-step table + mean / max / RMS</text>
+<text x="1320.0" y="325" text-anchor="middle" class="s">Status line: model versions, warnings, errors</text>
+<text x="1320.0" y="342" text-anchor="middle" class="c">SceneTransform: East/North/Up → JavaFX axes</text>
+<rect x="1090" y="418" width="460" height="66" rx="9" fill="#fafafa" stroke="#616161" stroke-width="2"/>
+<text x="1320.0" y="441" text-anchor="middle" class="t" style="font-size:15px;fill:#616161">CLI output</text>
+<text x="1320.0" y="461" text-anchor="middle" class="s">per-step table + evaluation summary in the terminal</text>
+<rect x="1090" y="514" width="460" height="84" rx="9" fill="#eceff1" stroke="#455a64" stroke-width="2"/>
+<text x="1320.0" y="537" text-anchor="middle" class="t" style="font-size:15px;fill:#455a64">Save / export</text>
+<text x="1320.0" y="557" text-anchor="middle" class="c">persistence.ScenarioPersistence</text>
+<text x="1320.0" y="574" text-anchor="middle" class="s">save scenario (.properties) · export results CSV</text>
+<text x="1320.0" y="591" text-anchor="middle" class="s">+ evaluation summary (.txt)</text>
+<path d="M970,884 L1060,884 L1060,318 L1088,318" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M1060,451 L1088,451" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M1060,556 L1088,556" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M1082,160 L1130,160 L1130,246" fill="none" stroke="#c62828" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ah-red)"/>
+<text x="1138" y="205" text-anchor="start" class="lbl" style="fill:#c62828">shown in red</text>
+<rect x="1090" y="640" width="460" height="174" rx="10" fill="#ffffff" stroke="#6a1b9a" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="1320" y="664" text-anchor="middle" class="t" style="fill:#6a1b9a">Replaceable formulations (interfaces)</text>
+<text x="1110" y="692" class="c" style="font-weight:600">TrajectoryModel</text>
+<text x="1280" y="692" class="s">← ConstantVelocityTrajectory</text>
+<text x="1110" y="718" class="c" style="font-weight:600">MeasurementModel</text>
+<text x="1280" y="718" class="s">← BaselineMeasurementModel v1.0</text>
+<text x="1110" y="744" class="c" style="font-weight:600">LocalizationModel</text>
+<text x="1280" y="744" class="s">← BaselineLocalizationModel v2.0</text>
+<text x="1320" y="776" text-anchor="middle" class="s">The stakeholder's formulation plugs in as a new class</text>
+<text x="1320" y="794" text-anchor="middle" class="s">with its own name/version — the rest of the pipeline is unchanged.</text>
+<text x="40" y="975" class="lbl" style="fill:#37474f;font-weight:600">Package colours:</text>
+<rect x="168" y="962" width="18" height="18" rx="3" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="193" y="976" class="lbl" style="fill:#37474f">ui</text>
+<rect x="235" y="962" width="18" height="18" rx="3" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="260" y="976" class="lbl" style="fill:#37474f">scenario</text>
+<rect x="350" y="962" width="18" height="18" rx="3" fill="#e0f2f1" stroke="#00796b" stroke-width="2"/>
+<text x="375" y="976" class="lbl" style="fill:#37474f">measurement</text>
+<rect x="489" y="962" width="18" height="18" rx="3" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2"/>
+<text x="514" y="976" class="lbl" style="fill:#37474f">localization</text>
+<rect x="636" y="962" width="18" height="18" rx="3" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="661" y="976" class="lbl" style="fill:#37474f">experiment</text>
+<rect x="767" y="962" width="18" height="18" rx="3" fill="#eceff1" stroke="#455a64" stroke-width="2"/>
+<text x="792" y="976" class="lbl" style="fill:#37474f">persistence</text>
+<rect x="906" y="962" width="18" height="18" rx="3" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+<text x="931" y="976" class="lbl" style="fill:#37474f">errors / refused</text>
+<text x="1560" y="976" text-anchor="end" class="lbl" style="fill:#78909c">dashed arrows = error path · ①–⑤ run once per time step</text>
+</svg>
+</body></html>
