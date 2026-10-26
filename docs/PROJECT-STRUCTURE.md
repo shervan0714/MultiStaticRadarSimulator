@@ -52,7 +52,7 @@ Generated and not in git: `build/` (compiled classes, test reports — recreated
 | File | Purpose |
 |---|---|
 | `Transmitter.java` | Transmitter: ID, position, frequency, transmit power, orientation vector |
-| `Receiver.java` | Receiver: ID (used to match measurements), position, frequency, gain in dBi, orientation vector |
+| `Receiver.java` | Receiver: ID (used to match measurements), position, frequency, gain in dBi, orientation as azimuth/elevation in degrees, `getBoresight()` pointing vector |
 | `ModelDescriptor.java` | `(name, version)` record that identifies a measurement or localization formulation; stored on every experiment record |
 | `RadarPhysics.java` | Received-power formula (placeholder until the stakeholder's equation is available). Only `calculateReceivedPower` is used; `triangulateDronePosition` and the dBm helpers are early-prototype leftovers |
 | `Drone.java` | Target entity from the early prototype; now only used as a temporary holder when computing received power |
@@ -70,7 +70,7 @@ Generated and not in git: `build/` (compiled classes, test reports — recreated
 | File | Purpose |
 |---|---|
 | `MeasurementModel.java` | Interface: turns transmitter + receivers + true target position into a `Measurement`. Replaceable formulation. |
-| `BaselineMeasurementModel.java` | Baseline v1.0: bistatic range, time delay and received power per receiver |
+| `BaselineMeasurementModel.java` | Baseline v1.1: bistatic range, time delay, received power, and azimuth/elevation in each receiver's antenna frame; optional seeded Gaussian range noise |
 | `Measurement.java` | All receivers' observations for one time step, plus the time |
 | `ReceiverMeasurement.java` | One receiver's observation, keyed by receiver ID so reordering receivers is safe |
 | `Quantity.java` | Measurable quantities: `BISTATIC_RANGE`, `TIME_DELAY`, `RECEIVED_POWER`, `AZIMUTH`, `ELEVATION` |
@@ -80,7 +80,7 @@ Generated and not in git: `build/` (compiled classes, test reports — recreated
 | File | Purpose |
 |---|---|
 | `LocalizationModel.java` | Interface: estimates the target position from a `Measurement`. Replaceable formulation. |
-| `BaselineLocalizationModel.java` | Baseline v2.0: least squares on bistatic-range ellipsoids (Levenberg–Marquardt, analytic Jacobian, multi-start); reports residual and condition number |
+| `BaselineLocalizationModel.java` | Baseline v2.1: least squares on bistatic-range ellipsoids (Levenberg–Marquardt, analytic Jacobian, multi-start, target kept at or above ground); reports residual and condition number |
 | `EstimationResult.java` | Estimate + status + RMS range residual + condition number |
 | `Status.java` | `SUCCESS`, `UNDER_CONSTRAINED`, `NUMERICALLY_UNSTABLE`, `INVALID_INPUT` — failures are explicit, never a silent wrong position |
 | `GeometryValidator.java` | Checks a sensor layout before running: receiver count, duplicate IDs, minimum spacing, collinear sensors (invalid), coplanar sensors (warning) |

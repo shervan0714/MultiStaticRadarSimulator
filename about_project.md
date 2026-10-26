@@ -42,7 +42,7 @@ Repo: `github.com/shervan0714/MultiStaticRadarSimulator` · Author: E. Sai Sherv
 
 | Command (run in `MultiStaticRadarSimulator/`) | What it does |
 |---|---|
-| `gradlew.bat test` | Compile + run all 111 JUnit 4 tests |
+| `gradlew.bat test` | Compile + run all 131 JUnit 4 tests |
 | `gradlew.bat run` | Open the JavaFX GUI (`RadarSimulatorApp`) |
 | `gradlew.bat runCli` | Run the pipeline in the terminal (`CLISimulatorApp`) |
 | `gradlew.bat runCli --args="--receivers 4 --duration 10 --timestep 1"` | CLI with options |
@@ -93,7 +93,7 @@ JavaFX draws with **+Y pointing down**, so the 3D view converts with `SceneTrans
 
 ### `core/` — entities and shared types
 - **`Transmitter(String id, Vector3D position, double frequency, double power)`** — getters/setters; `orientation` (Vector3D, default 0,0,0; not used in maths). Getters return **copies** of vectors.
-- **`Receiver(String id, Vector3D position, double frequency, double gain)`** — gain in dBi; `id` is how measurements are matched to receivers. `orientation` stored but not used yet.
+- **`Receiver(String id, Vector3D position, double frequency, double gain)`** — gain in dBi; `id` is how measurements are matched to receivers. Orientation: `setOrientation(double azimuthDeg, double elevationDeg)` (azimuth anticlockwise from East, elevation above horizontal, must be in [−90, 90]), `getAzimuthDeg()`, `getElevationDeg()`, `getBoresight()` (unit pointing vector). Default 0°/0° (facing East).
 - **`ModelDescriptor(String name, String version)`** — record identifying a formulation.
 - **`RadarPhysics`** — `calculateReceivedPower(Transmitter, Drone, Receiver)`: **placeholder** `P = Pt·λ² / (64·π²·(Rtx+Rrx)²)`, λ = c/f (ignores gains and RCS). Also `triangulateDronePosition`, `calculateError`, `powerToDBm`, `powerFromDBm` — legacy helpers from the early prototype, not used by the app (only by `RadarPhysicsTest`).
 - **`Drone`** — early-prototype target; now only used as a temporary holder inside `BaselineMeasurementModel` to call `calculateReceivedPower`.
@@ -105,14 +105,14 @@ JavaFX draws with **+Y pointing down**, so the 3D view converts with `SceneTrans
 
 ### `measurement/`
 - **`MeasurementModel`** (interface) — `ModelDescriptor getDescriptor()`, `Measurement generate(Transmitter, List<Receiver>, Vector3D targetPosition)`.
-- **`BaselineMeasurementModel`** — descriptor `("BaselineMeasurement", "1.0")`. For each receiver: `bistaticRange = |p − tx| + |p − rx|`, `timeDelay = range / 3e8`, `power = RadarPhysics.calculateReceivedPower(...)`. Puts them in a `Map<Quantity, Double>`; returns `Measurement(perReceiver, 0.0)` (the runner stamps the real time). **No noise.**
+- **`BaselineMeasurementModel`** — constructors `()` (noiseless) and `(double rangeNoiseStd, long seed)`. Descriptor `("BaselineMeasurement", "1.1")`, or `"1.1 noise=5.0m seed=42"` when noise is on. For each receiver: `bistaticRange = |p − tx| + |p − rx|` (+ seeded Gaussian noise if σ > 0), `timeDelay = range / 3e8`, `power = RadarPhysics.calculateReceivedPower(...)`, and `AZIMUTH`/`ELEVATION` of the target in that receiver's antenna frame (`anglesInReceiverFrame`: 0/0 = on the boresight, positive azimuth to the left, positive elevation up). Returns `Measurement(perReceiver, 0.0)` (the runner stamps the real time).
 - **`Measurement(List<ReceiverMeasurement> perReceiver, double time)`** — record.
 - **`ReceiverMeasurement(String receiverId, Map<Quantity, Double> values)`** — record; `receiverId` = `Receiver.getId()`.
-- **`Quantity`** — enum `BISTATIC_RANGE, TIME_DELAY, RECEIVED_POWER, AZIMUTH, ELEVATION` (AZIMUTH/ELEVATION are never generated yet).
+- **`Quantity`** — enum `BISTATIC_RANGE, TIME_DELAY, RECEIVED_POWER, AZIMUTH, ELEVATION` (all five are generated; the localizer uses only `BISTATIC_RANGE`).
 
 ### `localization/`
 - **`LocalizationModel`** (interface) — `ModelDescriptor getDescriptor()`, `EstimationResult estimate(Transmitter, List<Receiver>, Measurement)`.
-- **`BaselineLocalizationModel`** — descriptor `("BaselineLocalization", "2.0")`. See Section 7. Constants: `MAX_CONDITION_NUMBER = 1e8` (package-private), `MAX_ITERATIONS = 200`, `START_DIRECTIONS` (8 directions).
+- **`BaselineLocalizationModel`** — descriptor `("BaselineLocalization", "2.1")`. See Section 7. Constants: `MAX_CONDITION_NUMBER = 1e8` (package-private), `MAX_ITERATIONS = 200`, `START_DIRECTIONS` (8 directions).
 - **`EstimationResult(Vector3D position, Status status, double residual, double conditionNumber)`** — record. Failures use position (0,0,0) and NaN residual/condition number.
 - **`Status`** — enum `SUCCESS, UNDER_CONSTRAINED, NUMERICALLY_UNSTABLE, INVALID_INPUT`.
 - **`GeometryValidator`** — `ValidationResult validate(Transmitter, List<Receiver>)`. Nested record `ValidationResult(boolean isValid, Status status, String message, List<String> warnings)` with a 3-arg constructor (no warnings) and `hasWarnings()`. Constants: `MIN_RECEIVERS = 3`, `MIN_BASELINE_METRES = 1.0`, `FLATNESS_THRESHOLD = 1e-6`. Check order: null TX → INVALID_INPUT; no receivers → INVALID_INPUT; < 3 → UNDER_CONSTRAINED; duplicate IDs → INVALID_INPUT; two receivers closer than 1 m → NUMERICALLY_UNSTABLE; collinear sensors → UNDER_CONSTRAINED; coplanar sensors → valid + warning.
@@ -124,13 +124,13 @@ JavaFX draws with **+Y pointing down**, so the 3D view converts with `SceneTrans
 - **`EvaluationResult(double meanError, double maxError, double rmsError, int totalSteps, int successfulSteps, int failedSteps)`** — record.
 
 ### `persistence/`
-- **`ScenarioPersistence`** — `saveScenario(Scenario, double duration, double timeStep, String filePath)` and `loadScenario(String)` using Java `Properties` keys: `transmitter.id/.position.x|y|z/.frequency/.power/.orientation.x|y|z`, `receiver.count`, `receiver.<i>.id/.position.x|y|z/.frequency/.gain/.orientation.x|y|z`, `trajectory.type` (only `ConstantVelocity`), `trajectory.initialPosition.x|y|z`, `trajectory.velocity.x|y|z`, `simulation.duration`, `simulation.timeStep`. `loadSimulationParameters(path)` → `double[]{duration, timeStep}`. `exportResultsToCSV(records, path)` — header `step,time,gt_x,gt_y,gt_z,est_x,est_y,est_z,error,status,meas_model,loc_model` (error −1 if NaN). `exportEvaluationSummary(evaluation, path)` — text summary.
+- **`ScenarioPersistence`** — `saveScenario(Scenario, double duration, double timeStep, String filePath)` and `loadScenario(String)` using Java `Properties` keys: `transmitter.id/.position.x|y|z/.frequency/.power/.orientation.x|y|z`, `receiver.count`, `receiver.<i>.id/.position.x|y|z/.frequency/.gain/.azimuth/.elevation` (older files' `orientation.x|y` are read as azimuth/elevation), `trajectory.type` (only `ConstantVelocity`), `trajectory.initialPosition.x|y|z`, `trajectory.velocity.x|y|z`, `simulation.duration`, `simulation.timeStep`, `simulation.rangeNoiseStd`, `simulation.noiseSeed`. `saveScenario` has an overload with `(…, double rangeNoiseStd, long noiseSeed, String filePath)`. `loadSimulationParameters(path)` → `double[]{duration, timeStep, rangeNoiseStd, noiseSeed}` (noise 0, seed 0 for older files). `exportResultsToCSV(records, path)` — header `step,time,gt_x,gt_y,gt_z,est_x,est_y,est_z,error,status,meas_model,loc_model` (error −1 if NaN). `exportEvaluationSummary(evaluation, path)` — text summary.
 
 ### `ui/` (JavaFX)
-- **`SimulatorController`** — builds the window: left = `ScenarioEditor` + buttons (*Run experiment*, *Save scenario…*, *Load scenario…*, *Export results…*); centre = vertical `SplitPane` (`Visualization3D` top, `ResultsPanel` bottom); bottom = status label. Fields `measurementModel` / `localizationModel` (the formulations used by the GUI). `runExperiment()`: form → `ScenarioConfig.toScenario()` (errors shown red as "Invalid input: …") → validator (invalid → red "Cannot localize: …") → runner → evaluation → updates views and status line (model versions + geometry warnings). `static formatMetrics(EvaluationResult)` builds the "Steps: … | Mean error …" text (used by `ResultsPanel`). `loadScenario(File)`, `exportResults(File)`.
-- **`ScenarioEditor`** — the form. Text fields for TX position/frequency/power, one row per receiver (ID, X, Y, Z, gain, `x` remove button) + *Add receiver*, drone start + velocity, duration + time step. `getConfig()` parses fields (throws `IllegalArgumentException` naming the bad field); `setConfig(ScenarioConfig)` fills them.
-- **`ScenarioConfig`** — record `(Vector3D transmitterPosition, double frequencyHz, double transmitPowerW, List<ReceiverConfig> receivers, Vector3D initialPosition, Vector3D velocity, double duration, double timeStep)`; nested `ReceiverConfig(String id, double x, double y, double z, double gainDbi)`. `defaultConfig()` (GUI default: TX origin, 2.4 GHz, 1000 W; RX1 (5000,5000,0), RX2 (−5000,5000,0), RX3 (−5000,−5000,0), RX4 (5000,−5000,400); drone (−3000,−2000,300) at (60,40,5) m/s; 100 s, step 1 s). `toScenario()` validates (positive timing, step ≤ duration, non-blank unique IDs, finite numbers). `fromScenario(Scenario, duration, timeStep)`. Pure Java → unit-testable.
-- **`Visualization3D`** — 3D `SubScene`: ground grid, E/N/U axes (red/green/blue), TX (red), RX (blue + mast), true trajectory line (green), estimate points (orange), selected-step drone + estimate + white error line. Mouse drag = orbit, scroll = zoom; slider + *Play* (whole run plays in ~10 s). Constants: `SCENE_SIZE = 1000`, `MAX_DRAWN_POINTS = 400`, colours `TX_COLOR`, `RX_COLOR`, `TRUTH_COLOR`, `ESTIMATE_COLOR`, `GRID_COLOR`. Methods `showScenario`, `showExperiment(scenario, records)`, `showStep(index)`, `setStepListener`.
+- **`SimulatorController`** — builds the window: left = `ScenarioEditor` + buttons (*Run experiment*, *Save scenario…*, *Load scenario…*, *Export results…*); centre = vertical `SplitPane` (`Visualization3D` top, `ResultsPanel` bottom); bottom = status label. Field `localizationModel`; the measurement model is built per run with `config.measurementModel()` (so noise settings apply and the seed restarts every run). `runExperiment()`: form → `ScenarioConfig.toScenario()` (errors shown red as "Invalid input: …") → validator (invalid → red "Cannot localize: …") → runner → evaluation → updates views and status line (model versions + geometry warnings). `static formatMetrics(EvaluationResult)` builds the "Steps: … | Mean error …" text (used by `ResultsPanel`). `loadScenario(File)`, `exportResults(File)`.
+- **`ScenarioEditor`** — the form. Text fields for TX position/frequency/power, one row per receiver (ID, X, Y, Z, gain, Az, El, `x` remove button) + *Add receiver*, drone start + velocity, duration + time step, range noise σ + random seed (`parseLong` for the seed). `getConfig()` parses fields (throws `IllegalArgumentException` naming the bad field); `setConfig(ScenarioConfig)` fills them.
+- **`ScenarioConfig`** — record `(Vector3D transmitterPosition, double frequencyHz, double transmitPowerW, List<ReceiverConfig> receivers, Vector3D initialPosition, Vector3D velocity, double duration, double timeStep, double rangeNoiseStd, long noiseSeed)` (an 8-argument constructor gives noise 0, seed 0); nested `ReceiverConfig(String id, double x, double y, double z, double gainDbi, double azimuthDeg, double elevationDeg)` (a 5-argument constructor gives 0°/0°). `measurementModel()` returns the `BaselineMeasurementModel` for the noise settings. `defaultConfig()` (GUI default: TX origin, 2.4 GHz, 1000 W; RX1 (5000,5000,0) az 225, RX2 (−5000,5000,0) az 315, RX3 (−5000,−5000,0) az 45, RX4 (5000,−5000,400) az 135, all el 5 (facing the centre); drone (−3000,−2000,300) at (60,40,5) m/s; 100 s, step 1 s; noise 0, seed 42). `toScenario()` validates (positive timing, step ≤ duration, non-blank unique IDs, finite numbers, elevation in [−90, 90], noise ≥ 0). `fromScenario(Scenario, duration, timeStep)` and `fromScenario(…, rangeNoiseStd, noiseSeed)`. Pure Java → unit-testable.
+- **`Visualization3D`** — 3D `SubScene`: ground grid, E/N/U axes (red/green/blue), TX (red), RX (blue + mast + yellow facing-direction arrow from `getBoresight()`), true trajectory line (green), estimate points (orange), selected-step drone + estimate + white error line. Mouse drag = orbit, scroll = zoom; slider + *Play* (whole run plays in ~10 s). Constants: `SCENE_SIZE = 1000`, `MAX_DRAWN_POINTS = 400`, colours `TX_COLOR`, `RX_COLOR`, `BORESIGHT_COLOR`, `TRUTH_COLOR`, `ESTIMATE_COLOR`, `GRID_COLOR`. Methods `showScenario`, `showExperiment(scenario, records)`, `showStep(index)`, `setStepListener`.
 - **`SceneTransform`** — world→scene mapping (Section 3), `fitting(points, sceneSize)` auto-centres/scales, `sampleIndices(count, max)` downsampling.
 - **`ResultsPanel`** — summary label + `TableView<ExperimentRecord>` with columns Step, t (s), True X/Y/Z, Est X/Y/Z, Error (m), Status (red if not SUCCESS), Residual (m), Cond. Columns are created in the constructor with `column("Title", r -> String)`. Row selection ↔ 3D step are linked.
 
@@ -146,9 +146,9 @@ Style: `import org.junit.Test; import static org.junit.Assert.*;`, methods `@Tes
 
 | Test class | Checks |
 |---|---|
-| `localization/BaselineLocalizationModelTest` | noiseless estimate within 1e-3 m, mirror ambiguity (higher Z chosen), ground-level target has huge condition number, missing ranges → UNDER_CONSTRAINED, impossible range → INVALID_INPUT, reordered receivers, duplicate IDs |
+| `localization/BaselineLocalizationModelTest` | noiseless estimate within 1e-3 m, mirror ambiguity (above-ground solution chosen), ground-level target has huge condition number, missing ranges → UNDER_CONSTRAINED, impossible range → INVALID_INPUT, reordered receivers, duplicate IDs |
 | `localization/GeometryValidatorTest` | valid / too few / collinear / coplanar warning / too close / duplicate IDs / order & scale independence |
-| `experiment/RegressionTest` | full runs (3/4/5 receivers, wide baseline, close range, elevated TX) within `NOISELESS_TOLERANCE_M = 1e-3`; asserts descriptor versions `"1.0"` (measurement) and `"2.0"` (localization) |
+| `experiment/RegressionTest` | full runs (3/4/5 receivers, wide baseline, close range, elevated TX) within `NOISELESS_TOLERANCE_M = 1e-3`; asserts descriptor versions `"1.1"` (measurement) and `"2.1"` (localization); noisy default scenario (σ = 5 and 20 m) must never flip to the mirror below ground |
 | `experiment/ExperimentRunnerTest` | records in order, ground truth, time stamps, fractional steps (0.3 s / 0.1 s → 4 records) |
 | `experiment/EvaluationModuleTest` | mean/max/RMS by hand, failed steps excluded |
 | `persistence/ScenarioPersistenceTest` | save→load round trip, same results after reload, CSV/summary files written (non-empty) |
@@ -162,12 +162,12 @@ Style: `import org.junit.Test; import static org.junit.Assert.*;`, methods `@Tes
 
 **Bistatic range.** The signal goes TX → drone → RX. Its path length is `m = |p − t| + |p − r|`. All points with the same `m` form an **ellipsoid** with foci at TX and RX. Each receiver gives one ellipsoid; the drone is where they intersect.
 
-**Localization (BaselineLocalizationModel v2.0).** Unknown `p = (x, y, z)`. Residual for receiver *i*: `f_i(p) = |p − t| + |p − r_i| − m_i`. Minimise `Σ f_i²` (least squares) with **Levenberg–Marquardt (LM)**:
+**Localization (BaselineLocalizationModel v2.1).** Unknown `p = (x, y, z)`. Residual for receiver *i*: `f_i(p) = |p − t| + |p − r_i| − m_i`. Minimise `Σ f_i²` (least squares) with **Levenberg–Marquardt (LM)**:
 - Jacobian row (derivative of `f_i` w.r.t. p) = unit vector from TX to p + unit vector from r_i to p.
 - Each iteration solves `(JᵀJ + λ·diag(JᵀJ)) δ = −Jᵀf` with `Matrix3.solve`; if the cost drops, accept the step and decrease λ (behaves like Gauss–Newton, fast); otherwise increase λ (behaves like gradient descent, safe).
 - Stops when the step is tiny or after 200 iterations.
-- **Multi-start:** runs from 8 starting points around the sensor centroid, keeps the lowest residual. If two solutions are equally good (mirror image below a flat sensor layout), it keeps the one with **higher Z** (assumes the drone is above the sensors).
-- **Residual** reported = RMS of `f_i` in metres (≈0 for noiseless data).
+- **Multi-start:** runs from 8 starting points around the sensor centroid. **Any candidate at or above the ground (Z ≥ 0) beats any candidate below it**; then the lowest residual wins; exact ties go to the higher one. Reason: with (nearly) flat sensor layouts the mirror image below the sensors fits almost equally well, and with noise it can fit *better* (before v2.1, seed 42 at σ = 5 m gave an 854 m error at step 26).
+- **Residual** reported = RMS of `f_i` in metres (≈0 for noiseless data; with noise it is around the noise level, smaller when there are few spare receivers).
 - **Condition number** = sqrt(largest / smallest eigenvalue of JᵀJ). Large = geometry can't pin the position down well (e.g. drone in the same plane as all sensors). Above `1e8` → `NUMERICALLY_UNSTABLE`.
 - Fewer than 3 range measurements → `UNDER_CONSTRAINED`; a range shorter than the TX–RX distance (physically impossible) → `INVALID_INPUT`; duplicate receiver IDs → `INVALID_INPUT`.
 - Why the old method failed: it guessed from received power, forced z = 500 m, and used finite-difference gradient descent → 80–115 m error even without noise.
@@ -176,7 +176,7 @@ Style: `import org.junit.Test; import static org.junit.Assert.*;`, methods `@Tes
 
 **Error metrics** (successful steps only): mean = Σe/n, max = max e, RMS = sqrt(Σe²/n). RMS ≥ mean always.
 
-**Why error is 0.0000 m:** measurements are noiseless, so a correct solver recovers the exact position. It proves correctness, not real-world accuracy.
+**Why error is 0.0000 m by default:** the default noise is 0, so a correct solver recovers the exact position — that proves correctness. Set range noise σ (GUI) or `--noise` (CLI) to see realistic accuracy: on the default layout σ = 5 m gives a mean error of about 11–12 m (vertical is the weakest direction).
 
 ---
 
@@ -225,21 +225,8 @@ File: `persistence/ScenarioPersistence.java`, `exportResultsToCSV`: add the name
 4. Show it: `SimulatorController.formatMetrics`, `CLISimulatorApp` summary `printf`, `ScenarioPersistence.exportEvaluationSummary`.
 5. Test in `EvaluationModuleTest` with hand-calculated values.
 
-### 9.5 Add measurement noise
-File: `measurement/BaselineMeasurementModel.java`.
-```java
-private final double rangeNoiseStd;   // metres
-private final java.util.Random random;
-
-public BaselineMeasurementModel() { this(0.0, 0L); }      // keeps current noiseless behaviour
-public BaselineMeasurementModel(double rangeNoiseStd, long seed) {
-    this.rangeNoiseStd = rangeNoiseStd;
-    this.random = new java.util.Random(seed);              // seeded → reproducible
-}
-// in generate(), after computing bistaticRange:
-bistaticRange += random.nextGaussian() * rangeNoiseStd;
-```
-Recompute `timeDelay` from the noisy range. Bump the version only when noise is on (e.g. return `"1.1"` if `rangeNoiseStd > 0`) so existing tests still expect `"1.0"`. Noisy runs give non-zero error — don't use them in the 1 mm tests.
+### 9.5 Change or extend the measurement noise
+Noise already exists: `BaselineMeasurementModel(double rangeNoiseStd, long seed)` adds `random.nextGaussian() * rangeNoiseStd` to each bistatic range (in `generate()`), and the time delay is computed from the noisy range. To add **angle noise** too: add a `double angleNoiseStdDeg` field + constructor parameter, add `random.nextGaussian() * angleNoiseStdDeg` to the azimuth/elevation values, include it in the `getDescriptor()` version string, and pass it through `ScenarioConfig.measurementModel()` (plus a form field, persistence key and CLI option, like the range noise). Keep the no-argument constructor noiseless so the 1 mm tests still hold.
 
 ### 9.6 Add a new trajectory (e.g. circular)
 New file `scenario/CircularTrajectory.java`:
@@ -295,14 +282,14 @@ Add a test in `GeometryValidatorTest`. The GUI and CLI show the message automati
 ### 9.11 Change how the 3D view looks
 `ui/Visualization3D.java`: colours = the `*_COLOR` constants; sensor size `0.012 * SCENE_SIZE`, estimate points `0.004 * SCENE_SIZE`, trajectory line radius `1.5` (in `showExperiment`); playback length `records.size() / 10.0` (≈10 s) in `startPlayback`; max drawn points `MAX_DRAWN_POINTS`. Initial camera angle: `yaw` / `pitch` `Rotate` fields (−30°).
 
-### 9.12 Generate a new quantity (e.g. AZIMUTH at each receiver)
-In `BaselineMeasurementModel.generate`, per receiver: `Vector3D d = targetPosition.subtract(receiver.getPosition()); values.put(Quantity.AZIMUTH, Math.toDegrees(Math.atan2(d.y, d.x)));` (azimuth counter-clockwise from East, as in the design doc; elevation = `Math.toDegrees(Math.atan2(d.z, Math.hypot(d.x, d.y)))`). The localizer ignores quantities it doesn't use.
+### 9.12 Use the angle measurements
+AZIMUTH/ELEVATION are already generated per receiver (`BaselineMeasurementModel.anglesInReceiverFrame`), in the receiver's antenna frame. To show them, read `rm.values().get(Quantity.AZIMUTH)` from `record.measurement().perReceiver()` — e.g. a `ResultsPanel` column for one receiver ID. A new localization model could combine them with ranges; convert back to a world direction by applying the receiver's azimuth/elevation rotation in reverse.
 
 ---
 
 ## 10. Known gaps (be honest about these)
 
-Measurements are noiseless; received power is a placeholder formula; receiver orientation is stored but unused (no azimuth/elevation input yet); only one formulation per model; full experiment reload not implemented (scenario only, CSV export); only constant-velocity trajectory in GUI/persistence; GUI runs the experiment on the UI thread (~1 ms/step); no packaging (fat JAR/jpackage); stakeholder formulation and MATLAB reference cases not received yet. Details: `docs/MID-DEMO.md`.
+Received power is a placeholder formula (ignores gains/RCS); only range noise (no angle noise); the localizer uses ranges only (angles are generated but unused); only one formulation per model, and no side-by-side comparison yet; full experiment reload not implemented (scenario only, CSV export); only constant-velocity trajectory in GUI/persistence; GUI runs the experiment on the UI thread (~1 ms/step); no packaging (fat JAR/jpackage); stakeholder formulation and MATLAB reference cases not received yet. Details: `docs/MID-DEMO.md`.
 
 ---
 
@@ -313,7 +300,8 @@ Measurements are noiseless; received power is a placeholder formula; receiver or
 - **Why multiple start points?** Least squares on ellipsoids can have several local minima (e.g. the mirror solution); trying several starts and keeping the best avoids getting stuck.
 - **Why LM instead of plain gradient descent?** LM uses the Jacobian to take Gauss–Newton steps (fast, precise near the answer) and falls back to small gradient-like steps when a step fails (robust).
 - **What does a high condition number mean?** Small measurement errors would cause large position errors — the geometry is weak in some direction.
-- **Why are collinear sensors rejected but coplanar ones allowed?** Collinear: infinitely many solutions on a circle. Coplanar: only two (mirror images), resolved by assuming the drone is above the sensors.
+- **Why are collinear sensors rejected but coplanar ones allowed?** Collinear: infinitely many solutions on a circle. Coplanar: only two (mirror images), resolved by constraining the drone to be at or above the ground.
 - **Why match by receiver ID?** So reordering the receiver list can never attach a measurement to the wrong receiver.
-- **Why 0 m error?** Noiseless data; it checks correctness. Real accuracy needs the noise model.
+- **Why 0 m error by default?** Default noise is 0, so it checks correctness. With noise on (e.g. σ = 5 m) you get realistic errors (~11 m mean on the default layout).
+- **How is noise made reproducible?** The random generator is seeded; the same seed gives exactly the same noisy run, and the seed is recorded in the model version and saved in the scenario file.
 - **How are formulations swapped?** Implement `MeasurementModel` / `LocalizationModel`, give a new name/version, change one line in the controller/CLI.

@@ -25,9 +25,9 @@ cd MultiStaticRadarSimulator
 
 ## Using the GUI
 
-1. **Configure** the transmitter, receivers (use *Add receiver* and the `x` buttons; at least 3), the drone start position and velocity, and the duration and time step.
+1. **Configure** the transmitter, the receivers (use *Add receiver* and the `x` buttons; at least 3), each receiver's facing direction (**Az** in degrees anticlockwise from East, **El** in degrees above horizontal), the drone start position and velocity, the duration and time step, and optional **range noise σ** with a **random seed** (0 = noiseless; the same seed always reproduces the same run).
 2. Click **Run experiment**. The geometry is validated first: invalid layouts (too few receivers, collinear sensors, duplicate IDs) are refused with a red message, and coplanar layouts run with a warning.
-3. **Inspect** the 3D view: drag to orbit, scroll to zoom, and use the slider or *Play* to step through time. The results table lists every step; selecting a row moves the 3D view to that step.
+3. **Inspect** the 3D view (yellow arrows show where each receiver points): drag to orbit, scroll to zoom, and use the slider or *Play* to step through time. The results table lists every step; selecting a row moves the 3D view to that step.
 4. **Save scenario… / Load scenario…** store and restore the configuration (`.properties`). **Export results…** writes a per-step CSV and an evaluation summary.
 
 The window opens with a 4-receiver default scenario already evaluated.
@@ -38,6 +38,7 @@ The window opens with a 4-receiver default scenario already evaluated.
 ./gradlew runCli --args="--receivers 4 --duration 10 --timestep 1"
 ./gradlew runCli --args="--save scenario.properties"
 ./gradlew runCli --args="--load scenario.properties --export results.csv"
+./gradlew runCli --args="--receivers 4 --noise 5 --seed 42"
 ```
 
 | Option | Meaning |
@@ -46,6 +47,7 @@ The window opens with a 4-receiver default scenario already evaluated.
 | `--duration S`, `--timestep S` | Simulation time span and sample interval in seconds |
 | `--save FILE` / `--load FILE` | Save or load the scenario configuration |
 | `--export FILE.csv` | Write per-step results and `FILE_summary.txt` |
+| `--noise M`, `--seed N` | Gaussian range noise with standard deviation M metres, seeded with N (default: noiseless, seed 42); override values from `--load` |
 
 ## Coordinate convention
 
@@ -71,28 +73,32 @@ Each design doc module is one package under `src/main/java/com/radar/simulator/`
 
 Measurements are matched to receivers by **receiver ID**, so reordering receivers can never attach an observation to the wrong one. A localization result is never silently wrong: besides `SUCCESS` it can report `UNDER_CONSTRAINED`, `NUMERICALLY_UNSTABLE` or `INVALID_INPUT`.
 
-### Baseline formulation (v2.0)
+### Baseline formulation (measurement v1.1, localization v2.1)
 
 Until the stakeholder's formulation is available, the baseline uses bistatic range only. Each receiver *i* gives one equation
 
 &nbsp;&nbsp;&nbsp;&nbsp;‖p − t‖ + ‖p − rᵢ‖ = mᵢ
 
-(an ellipsoid with foci at the transmitter *t* and the receiver *rᵢ*). The position *p* is the least-squares solution found by Levenberg–Marquardt with the analytic Jacobian, started from several points. The result reports the RMS range residual and the Jacobian condition number.
+(an ellipsoid with foci at the transmitter *t* and the receiver *rᵢ*). The position *p* is the least-squares solution found by Levenberg–Marquardt with the analytic Jacobian, started from several points; the target is constrained to be at or above the ground, which resolves the mirror solution of a (nearly) flat sensor layout. The result reports the RMS range residual and the Jacobian condition number.
+
+The measurement model also produces each receiver's **azimuth/elevation** of the target in that receiver's own antenna frame (so orientation matters), and can add **seeded Gaussian noise** to the ranges.
 
 ## Verification
 
-`./gradlew test` runs 111 JUnit tests covering every module in the design doc test plan:
+`./gradlew test` runs 131 JUnit tests covering every module in the design doc test plan:
 
 - **Hand-computable unit cases:** vectors, 3×3 linear algebra, trajectories, measurements and error metrics.
 - **Noiseless reference scenarios:** 3, 4 and 5 receivers, wide baseline, close range and an elevated transmitter. Each must reproduce ground truth within **1 mm**.
 - **Degenerate geometry:** too few receivers, collinear sensors, duplicate IDs, impossible ranges and an in-plane target. Each must return an explicit status or a warning.
 - **Ordering and timing:** receiver reordering, measurement time stamps, and fractional time steps.
+- **Orientation:** boresight directions and receiver-frame angles for hand-checkable geometries.
+- **Noise:** seeded runs are reproducible, the noise spread matches σ, and noisy estimates never flip to the mirror solution below ground.
 - **Persistence round trip and CSV export.**
 - **GUI logic without a display:** form-to-scenario mapping and the world-to-scene transform.
 
 ## Status
 
-Mid-evaluation (week of 12 Oct 2026): the full workflow above works end to end. See [docs/MID-DEMO.md](docs/MID-DEMO.md) for the demo script and the list of known gaps, and [docs/WEEKLY-LOG.md](docs/WEEKLY-LOG.md) for the change history.
+The full workflow above works end to end. Since the mid-evaluation, receiver orientation, receiver-frame angles and seeded measurement noise have been added. [docs/MID-DEMO.md](docs/MID-DEMO.md) has the mid-evaluation demo script and gap list (with which gaps are now closed), and [docs/WEEKLY-LOG.md](docs/WEEKLY-LOG.md) the change history.
 
 ## Contact
 

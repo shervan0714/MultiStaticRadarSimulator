@@ -22,6 +22,8 @@
 
 ## Known gaps (honest list)
 
+> **Update, 26 Oct 2026 (after the mid-evaluation):** gap 2 (noise) and gap 4 (receiver orientation) are now closed: seeded range noise is settable in the GUI and CLI, and receivers have azimuth/elevation that is shown in 3D and affects the generated angle measurements. Adding noise also exposed and fixed a mirror-solution bug (see `docs/WEEKLY-LOG.md`, Week 8). The table below is kept as it was presented at the mid-evaluation.
+
 | # | Gap | Impact | Plan |
 |---|---|---|---|
 | 1 | **The stakeholder's measurement/localization formulation is not implemented yet.** The current models are my own baseline (bistatic range + least squares), as planned in the design doc. | Results show what the baseline can do, not what Dr. Giridhar's model can do. | Add it as a second model behind the same interfaces once received. |
