@@ -216,7 +216,7 @@ public class BaselineLocalizationModelTest {
         ModelDescriptor descriptor = model.getDescriptor();
 
         assertEquals("BaselineLocalization", descriptor.name());
-        assertEquals("2.0", descriptor.version());
+        assertEquals("2.1", descriptor.version());
     }
 
     @Test

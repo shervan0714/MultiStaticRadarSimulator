@@ -231,7 +231,7 @@ public class RegressionTest {
             assertEquals("BaselineMeasurement", record.measurementModelDescriptor().name());
             assertEquals("1.1", record.measurementModelDescriptor().version());
             assertEquals("BaselineLocalization", record.localizationModelDescriptor().name());
-            assertEquals("2.0", record.localizationModelDescriptor().version());
+            assertEquals("2.1", record.localizationModelDescriptor().version());
         }
     }
 
@@ -255,6 +255,30 @@ public class RegressionTest {
         // Total = successful + failed
         assertEquals(evaluation.totalSteps(),
             evaluation.successfulSteps() + evaluation.failedSteps());
+    }
+
+    // ===== Regression: noisy ranges must not flip to the mirror solution below ground =====
+
+    @Test
+    public void testNoisyRangesDoNotFlipToMirrorBelowGround() {
+        // GUI default layout: only RX4 is raised (400 m over a 10 km square), so the
+        // sensors are nearly coplanar. Before v2.1, seed 42 at 5 m noise put step 26
+        // at z = -424 m (true z = 430 m), an 854 m error.
+        com.radar.simulator.ui.ScenarioConfig base = com.radar.simulator.ui.ScenarioConfig.defaultConfig();
+        for (double sigma : new double[]{5.0, 20.0}) {
+            com.radar.simulator.ui.ScenarioConfig noisy = new com.radar.simulator.ui.ScenarioConfig(
+                base.transmitterPosition(), base.frequencyHz(), base.transmitPowerW(), base.receivers(),
+                base.initialPosition(), base.velocity(), base.duration(), base.timeStep(), sigma, 42L);
+            List<ExperimentRecord> records = new ExperimentRunner(noisy.toScenario(),
+                noisy.measurementModel(), new BaselineLocalizationModel()).run(noisy.duration(), noisy.timeStep());
+
+            for (ExperimentRecord r : records) {
+                double trueZ = r.groundTruthPosition().z;
+                double estZ = r.estimationResult().position().z;
+                assertTrue("step " + r.stepIndex() + " at sigma " + sigma + " flipped below ground: true z="
+                    + trueZ + ", estimate z=" + estZ, estZ > -0.25 * trueZ);
+            }
+        }
     }
 
     // ===== Helper =====

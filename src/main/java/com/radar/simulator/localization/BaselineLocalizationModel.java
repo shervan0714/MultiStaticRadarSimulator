@@ -26,10 +26,14 @@ import java.util.Map;
  * Assumptions:
  * <ul>
  *   <li>At least 3 bistatic ranges are needed for a 3D position.</li>
- *   <li>The solver is started from several points around the sensors. When
- *       two solutions fit equally well (e.g. the mirror image below a
- *       coplanar sensor layout), the one with the larger Z (higher altitude)
- *       is returned, i.e. the target is assumed to be above the sensors.</li>
+ *   <li>The solver is started from several points around the sensors.
+ *       With (nearly) coplanar sensors a target and its mirror image across
+ *       the sensor plane fit the ranges almost equally well; with noisy
+ *       ranges the mirror can even fit better. The target is therefore
+ *       constrained to be at or above the ground (Z &gt;= 0): if any
+ *       candidate is above ground, the best-fitting above-ground candidate
+ *       is returned (exact ties go to the higher one). Only if every
+ *       candidate is below ground is the best-fitting one returned.</li>
  * </ul>
  *
  * The result reports the RMS range residual in metres and the condition
@@ -54,7 +58,7 @@ public class BaselineLocalizationModel implements LocalizationModel {
 
     @Override
     public ModelDescriptor getDescriptor() {
-        return new ModelDescriptor("BaselineLocalization", "2.0");
+        return new ModelDescriptor("BaselineLocalization", "2.1");
     }
 
     @Override
@@ -91,31 +95,59 @@ public class BaselineLocalizationModel implements LocalizationModel {
             return failure(Status.UNDER_CONSTRAINED);
         }
 
-        Vector3D best = null;
-        double bestRms = Double.POSITIVE_INFINITY;
+        List<Vector3D> candidates = new ArrayList<>();
+        List<Double> residuals = new ArrayList<>();
         for (Vector3D start : startingPoints(tx, equations)) {
             Vector3D candidate = solveFrom(start, tx, equations);
             double rms = rmsResidual(candidate, tx, equations);
             if (!Double.isFinite(rms)) continue;
-
-            boolean clearlyBetter = rms < bestRms * (1 - 1e-6) - 1e-6;
-            boolean tieButHigher = Math.abs(rms - bestRms) <= bestRms * 1e-6 + 1e-6
-                && best != null && candidate.z > best.z;
-            if (best == null || clearlyBetter || tieButHigher) {
-                best = candidate;
-                bestRms = rms;
-            }
+            candidates.add(candidate);
+            residuals.add(rms);
         }
 
-        if (best == null) {
+        if (candidates.isEmpty()) {
             return failure(Status.NUMERICALLY_UNSTABLE);
         }
+
+        Vector3D best = selectCandidate(candidates, residuals);
+        double bestRms = rmsResidual(best, tx, equations);
 
         double conditionNumber = conditionNumber(best, tx, equations);
         Status status = conditionNumber > MAX_CONDITION_NUMBER
             ? Status.NUMERICALLY_UNSTABLE
             : Status.SUCCESS;
         return new EstimationResult(best, status, bestRms, conditionNumber);
+    }
+
+    /**
+     * Pick the solution among the multi-start candidates: any candidate at or
+     * above the ground beats any candidate below it; then the lower residual
+     * wins, and on an exact tie the higher candidate.
+     */
+    private static Vector3D selectCandidate(List<Vector3D> candidates, List<Double> residuals) {
+        Vector3D best = null;
+        double bestRms = Double.POSITIVE_INFINITY;
+        boolean bestAboveGround = false;
+        for (int i = 0; i < candidates.size(); i++) {
+            double rms = residuals.get(i);
+            Vector3D candidate = candidates.get(i);
+            boolean aboveGround = candidate.z >= 0;
+
+            boolean better;
+            if (best == null || aboveGround != bestAboveGround) {
+                better = best == null || aboveGround;
+            } else if (Math.abs(rms - bestRms) <= bestRms * 1e-6 + 1e-6) {
+                better = candidate.z > best.z;
+            } else {
+                better = rms < bestRms;
+            }
+            if (better) {
+                best = candidate;
+                bestRms = rms;
+                bestAboveGround = aboveGround;
+            }
+        }
+        return best;
     }
 
     /**
