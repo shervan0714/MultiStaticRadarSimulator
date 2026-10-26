@@ -229,7 +229,7 @@ public class RegressionTest {
 
         for (ExperimentRecord record : records) {
             assertEquals("BaselineMeasurement", record.measurementModelDescriptor().name());
-            assertEquals("1.0", record.measurementModelDescriptor().version());
+            assertEquals("1.1", record.measurementModelDescriptor().version());
             assertEquals("BaselineLocalization", record.localizationModelDescriptor().name());
             assertEquals("2.0", record.localizationModelDescriptor().version());
         }

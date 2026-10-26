@@ -102,6 +102,62 @@ public class BaselineMeasurementModelTest {
         ModelDescriptor descriptor = model.getDescriptor();
 
         assertEquals("BaselineMeasurement", descriptor.name());
-        assertEquals("1.0", descriptor.version());
+        assertEquals("1.1", descriptor.version());
+    }
+
+    // ----- AZIMUTH / ELEVATION in the receiver's antenna frame -----
+
+    private static double[] angles(Receiver rx, Vector3D target) {
+        Transmitter tx = new Transmitter("TX1", new Vector3D(0, 0, 0), 2.4e9, 1000.0);
+        ReceiverMeasurement rm = new BaselineMeasurementModel()
+            .generate(tx, List.of(rx), target).perReceiver().get(0);
+        return new double[]{rm.values().get(Quantity.AZIMUTH), rm.values().get(Quantity.ELEVATION)};
+    }
+
+    @Test
+    public void testTargetOnBoresightReadsZeroAngles() {
+        Receiver rx = new Receiver("RX1", new Vector3D(1000, 1000, 0), 2.4e9, 10.0);
+        rx.setOrientation(225, 0);  // facing the origin (south-west)
+        double[] a = angles(rx, new Vector3D(0, 0, 0));
+        assertEquals(0.0, a[0], 1e-9);
+        assertEquals(0.0, a[1], 1e-9);
+    }
+
+    @Test
+    public void testAzimuthIsAnticlockwiseFromBoresight() {
+        Receiver rx = new Receiver("RX1", new Vector3D(0, 0, 0), 2.4e9, 10.0);  // faces East
+        assertEquals(90.0, angles(rx, new Vector3D(0, 500, 0))[0], 1e-9);    // North = left
+        assertEquals(-90.0, angles(rx, new Vector3D(0, -500, 0))[0], 1e-9);  // South = right
+        assertEquals(45.0, angles(rx, new Vector3D(100, 100, 0))[0], 1e-9);
+    }
+
+    @Test
+    public void testElevationIsRelativeToAntennaTilt() {
+        Receiver rx = new Receiver("RX1", new Vector3D(0, 0, 0), 2.4e9, 10.0);
+        // Antenna horizontal: target 45 degrees up
+        assertEquals(45.0, angles(rx, new Vector3D(100, 0, 100))[1], 1e-9);
+        // Antenna tilted 30 degrees up: horizontal target reads -30, target 30 degrees up reads 0
+        rx.setOrientation(0, 30);
+        assertEquals(-30.0, angles(rx, new Vector3D(100, 0, 0))[1], 1e-9);
+        double[] onAxis = angles(rx, new Vector3D(Math.cos(Math.toRadians(30)), 0, 0.5));
+        assertEquals(0.0, onAxis[0], 1e-9);
+        assertEquals(0.0, onAxis[1], 1e-9);
+    }
+
+    @Test
+    public void testOrientationChangesAnglesButNotRange() {
+        Transmitter tx = new Transmitter("TX1", new Vector3D(0, 0, 0), 2.4e9, 1000.0);
+        Receiver rx = new Receiver("RX1", new Vector3D(2000, 0, 0), 2.4e9, 10.0);
+        Vector3D target = new Vector3D(1000, 1500, 300);
+        BaselineMeasurementModel model = new BaselineMeasurementModel();
+
+        ReceiverMeasurement before = model.generate(tx, List.of(rx), target).perReceiver().get(0);
+        rx.setOrientation(120, 10);
+        ReceiverMeasurement after = model.generate(tx, List.of(rx), target).perReceiver().get(0);
+
+        assertEquals(before.values().get(Quantity.BISTATIC_RANGE),
+            after.values().get(Quantity.BISTATIC_RANGE), 1e-9);
+        assertNotEquals(before.values().get(Quantity.AZIMUTH),
+            after.values().get(Quantity.AZIMUTH), 1.0);
     }
 }
