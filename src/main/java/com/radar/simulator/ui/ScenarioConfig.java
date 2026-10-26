@@ -38,8 +38,17 @@ public record ScenarioConfig(
     double timeStep
 ) {
 
-    /** One receiver row in the editor. */
-    public record ReceiverConfig(String id, double x, double y, double z, double gainDbi) {}
+    /**
+     * One receiver row in the editor. Orientation uses the design doc convention:
+     * azimuth counter-clockwise from East, elevation above the horizontal (degrees).
+     */
+    public record ReceiverConfig(String id, double x, double y, double z, double gainDbi,
+                                 double azimuthDeg, double elevationDeg) {
+        /** Receiver pointing East and horizontal. */
+        public ReceiverConfig(String id, double x, double y, double z, double gainDbi) {
+            this(id, x, y, z, gainDbi, 0, 0);
+        }
+    }
 
     public ScenarioConfig {
         receivers = List.copyOf(receivers);
@@ -47,16 +56,17 @@ public record ScenarioConfig(
 
     /**
      * The scenario the GUI opens with: a ground-level transmitter, a square
-     * of receivers with one raised receiver, and a drone crossing at 300 m.
+     * of receivers (one raised on a mast) each facing the centre of the area
+     * and tilted 5 degrees up, and a drone crossing at 300 m.
      */
     public static ScenarioConfig defaultConfig() {
         return new ScenarioConfig(
             new Vector3D(0, 0, 0), 2.4e9, 1000.0,
             List.of(
-                new ReceiverConfig("RX1", 5000, 5000, 0, 10),
-                new ReceiverConfig("RX2", -5000, 5000, 0, 10),
-                new ReceiverConfig("RX3", -5000, -5000, 0, 10),
-                new ReceiverConfig("RX4", 5000, -5000, 400, 10)
+                new ReceiverConfig("RX1", 5000, 5000, 0, 10, 225, 5),
+                new ReceiverConfig("RX2", -5000, 5000, 0, 10, 315, 5),
+                new ReceiverConfig("RX3", -5000, -5000, 0, 10, 45, 5),
+                new ReceiverConfig("RX4", 5000, -5000, 400, 10, 135, 5)
             ),
             new Vector3D(-3000, -2000, 300),
             new Vector3D(60, 40, 5),
@@ -97,7 +107,15 @@ public record ScenarioConfig(
             if (!Double.isFinite(rc.gainDbi())) {
                 throw new IllegalArgumentException("Gain of " + id + " must be a number");
             }
-            rxList.add(new Receiver(id, position, frequencyHz, rc.gainDbi()));
+            if (!Double.isFinite(rc.azimuthDeg())) {
+                throw new IllegalArgumentException("Azimuth of " + id + " must be a number");
+            }
+            if (!(rc.elevationDeg() >= -90 && rc.elevationDeg() <= 90)) {
+                throw new IllegalArgumentException("Elevation of " + id + " must be between -90 and 90 degrees");
+            }
+            Receiver rx = new Receiver(id, position, frequencyHz, rc.gainDbi());
+            rx.setOrientation(rc.azimuthDeg(), rc.elevationDeg());
+            rxList.add(rx);
         }
 
         Transmitter tx = new Transmitter("TX1", transmitterPosition, frequencyHz, transmitPowerW);
@@ -112,7 +130,8 @@ public record ScenarioConfig(
         List<ReceiverConfig> rows = new ArrayList<>();
         for (Receiver rx : scenario.getReceivers()) {
             Vector3D p = rx.getPosition();
-            rows.add(new ReceiverConfig(rx.getId(), p.x, p.y, p.z, rx.getGain()));
+            rows.add(new ReceiverConfig(rx.getId(), p.x, p.y, p.z, rx.getGain(),
+                rx.getAzimuthDeg(), rx.getElevationDeg()));
         }
         return new ScenarioConfig(
             tx.getPosition(), tx.getFrequency(), tx.getPower(), rows,

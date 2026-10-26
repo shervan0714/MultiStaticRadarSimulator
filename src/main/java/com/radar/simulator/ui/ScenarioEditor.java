@@ -46,10 +46,12 @@ public class ScenarioEditor {
     /** Editable fields for one receiver. */
     private final class ReceiverRow {
         final TextField id = new TextField();
-        final TextField x = numberField();
-        final TextField y = numberField();
-        final TextField z = numberField();
-        final TextField gain = numberField();
+        final TextField x = numberField(62);
+        final TextField y = numberField(62);
+        final TextField z = numberField(56);
+        final TextField gain = numberField(44);
+        final TextField azimuth = numberField(46);
+        final TextField elevation = numberField(42);
         final HBox box;
 
         ReceiverRow(ScenarioConfig.ReceiverConfig rc) {
@@ -59,11 +61,13 @@ public class ScenarioEditor {
             y.setText(format(rc.y()));
             z.setText(format(rc.z()));
             gain.setText(format(rc.gainDbi()));
+            azimuth.setText(format(rc.azimuthDeg()));
+            elevation.setText(format(rc.elevationDeg()));
             Button remove = new Button("x");
             remove.setMinWidth(Button.USE_PREF_SIZE);
             remove.setTooltip(new javafx.scene.control.Tooltip("Remove receiver"));
             remove.setOnAction(e -> removeRow(this));
-            box = new HBox(4, id, x, y, z, gain, remove);
+            box = new HBox(4, id, x, y, z, gain, azimuth, elevation, remove);
             box.setAlignment(Pos.CENTER_LEFT);
         }
 
@@ -72,13 +76,14 @@ public class ScenarioEditor {
             String label = name.isEmpty() ? "receiver" : name;
             return new ScenarioConfig.ReceiverConfig(name,
                 parse(x, label + " X"), parse(y, label + " Y"), parse(z, label + " Z"),
-                parse(gain, label + " gain"));
+                parse(gain, label + " gain"),
+                parse(azimuth, label + " azimuth"), parse(elevation, label + " elevation"));
         }
     }
 
     public ScenarioEditor() {
         root.setPadding(new Insets(10));
-        root.setPrefWidth(400);
+        root.setPrefWidth(450);
         root.getChildren().addAll(
             section("Transmitter", grid(
                 "Position X / Y / Z (m)", new HBox(4, txX, txY, txZ),
@@ -143,12 +148,16 @@ public class ScenarioEditor {
 
     private VBox receiverSection() {
         HBox header = new HBox(4,
-            headerLabel("ID", 52), headerLabel("X (m)", 70), headerLabel("Y (m)", 70),
-            headerLabel("Z (m)", 70), headerLabel("Gain (dBi)", 70));
+            headerLabel("ID", 52), headerLabel("X (m)", 62), headerLabel("Y (m)", 62),
+            headerLabel("Z (m)", 56), headerLabel("Gain", 44), headerLabel("Az (°)", 46),
+            headerLabel("El (°)", 42));
+        Label hint = new Label("Gain in dBi. Az: degrees anticlockwise from East. El: degrees above horizontal.");
+        hint.setWrapText(true);
+        hint.setStyle("-fx-font-size: 10.5px; -fx-text-fill: #666;");
         Button add = new Button("Add receiver");
         add.setOnAction(e -> addRow(new ScenarioConfig.ReceiverConfig(
             nextReceiverId(), 0, 0, 0, 10)));
-        return new VBox(4, header, receiverRows, add);
+        return new VBox(4, header, receiverRows, add, hint);
     }
 
     private void addRow(ScenarioConfig.ReceiverConfig rc) {
@@ -198,8 +207,12 @@ public class ScenarioEditor {
     }
 
     private static TextField numberField() {
+        return numberField(70);
+    }
+
+    private static TextField numberField(double width) {
         TextField field = new TextField();
-        field.setPrefWidth(70);
+        field.setPrefWidth(width);
         return field;
     }
 

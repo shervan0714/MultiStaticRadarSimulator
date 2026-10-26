@@ -226,7 +226,7 @@
 ## Week 8: Oct 25 - Oct 31, 2026
 
 ### Work Completed
-(To be filled in)
+- Receiver orientation (design doc 1.1, proposal acceptance criterion): `Receiver` now stores azimuth (degrees anticlockwise from East) and elevation (degrees above horizontal) instead of an unlabelled vector, with a `getBoresight()` unit vector. The GUI form has Az/El columns per receiver (default receivers face the centre of the area, tilted 5 degrees up), the 3D view draws each receiver's facing direction as a yellow arrow, and scenario files save `receiver.N.azimuth/elevation` while still loading the older `orientation.x/y` keys. Elevation outside -90..90 is rejected. 116 tests, all passing.
 
 ### Contributions
 (To be filled in)

@@ -54,6 +54,23 @@ public class ScenarioConfigTest {
     }
 
     @Test
+    public void testOrientationTransfersToReceiver() {
+        Scenario scenario = withReceivers(List.of(
+            new ScenarioConfig.ReceiverConfig("RX1", 1000, 0, 0, 10, 135, 12.5),
+            new ScenarioConfig.ReceiverConfig("RX2", 0, 1000, 0, 10))).toScenario();
+
+        assertEquals(135.0, scenario.getReceivers().get(0).getAzimuthDeg(), EPSILON);
+        assertEquals(12.5, scenario.getReceivers().get(0).getElevationDeg(), EPSILON);
+        assertEquals(0.0, scenario.getReceivers().get(1).getAzimuthDeg(), EPSILON);
+    }
+
+    @Test
+    public void testRejectsElevationOutOfRange() {
+        assertInvalid(withReceivers(List.of(
+            new ScenarioConfig.ReceiverConfig("RX1", 1000, 0, 0, 10, 0, 120))), "Elevation of RX1");
+    }
+
+    @Test
     public void testRoundTripThroughScenario() {
         ScenarioConfig original = ScenarioConfig.defaultConfig();
         ScenarioConfig copy = ScenarioConfig.fromScenario(

@@ -58,7 +58,7 @@ public class ScenarioPersistenceTest {
 
         List<Receiver> receivers = new ArrayList<>();
         Receiver rx1 = new Receiver("RX1", new Vector3D(1000, 2000, 50), 5e9, 15.0);
-        rx1.setOrientation(new Vector3D(5, 10, 0));
+        rx1.setOrientation(225, 7.5);
         receivers.add(rx1);
         receivers.add(new Receiver("RX2", new Vector3D(-1000, 3000, 100), 5e9, 12.0));
         receivers.add(new Receiver("RX3", new Vector3D(0, -2000, 75), 5e9, 18.0));
@@ -88,6 +88,9 @@ public class ScenarioPersistenceTest {
         assertEquals("RX1", loaded.getReceivers().get(0).getId());
         assertEquals(1000.0, loaded.getReceivers().get(0).getPosition().x, 1e-9);
         assertEquals(15.0, loaded.getReceivers().get(0).getGain(), 1e-9);
+        assertEquals(225.0, loaded.getReceivers().get(0).getAzimuthDeg(), 1e-9);
+        assertEquals(7.5, loaded.getReceivers().get(0).getElevationDeg(), 1e-9);
+        assertEquals(0.0, loaded.getReceivers().get(1).getAzimuthDeg(), 1e-9);
 
         // Verify trajectory
         Vector3D pos0 = loaded.getTargetTrajectory().getPosition(0);
@@ -178,5 +181,22 @@ public class ScenarioPersistenceTest {
         File summaryFile = new File(tempSummaryFile);
         assertTrue("Summary file should exist", summaryFile.exists());
         assertTrue("Summary file should not be empty", summaryFile.length() > 0);
+    }
+
+    @Test
+    public void testLoadsOrientationFromOlderFileFormat() throws IOException {
+        // Files saved before azimuth/elevation keys existed used orientation.x / orientation.y
+        java.nio.file.Files.writeString(java.nio.file.Paths.get(tempScenarioFile), String.join(System.lineSeparator(),
+            "receiver.count=3",
+            "receiver.0.id=RX1", "receiver.0.position.x=5000", "receiver.0.orientation.x=135", "receiver.0.orientation.y=12",
+            "receiver.1.id=RX2", "receiver.1.position.y=5000",
+            "receiver.2.id=RX3", "receiver.2.position.x=-5000",
+            "trajectory.type=ConstantVelocity"));
+
+        Scenario loaded = persistence.loadScenario(tempScenarioFile);
+
+        assertEquals(135.0, loaded.getReceivers().get(0).getAzimuthDeg(), 1e-9);
+        assertEquals(12.0, loaded.getReceivers().get(0).getElevationDeg(), 1e-9);
+        assertEquals(0.0, loaded.getReceivers().get(1).getElevationDeg(), 1e-9);
     }
 }

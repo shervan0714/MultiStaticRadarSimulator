@@ -21,7 +21,7 @@ import java.util.*;
  * to keep the project lightweight. Each scenario file stores:
  * <ul>
  *   <li>Transmitter configuration (position, frequency, power, orientation)</li>
- *   <li>Receiver configurations (position, frequency, gain, orientation)</li>
+ *   <li>Receiver configurations (position, frequency, gain, azimuth/elevation)</li>
  *   <li>Trajectory parameters (initial position, velocity)</li>
  *   <li>Simulation parameters (duration, time step)</li>
  * </ul>
@@ -67,9 +67,8 @@ public class ScenarioPersistence {
             props.setProperty(prefix + "position.z", String.valueOf(rx.getPosition().z));
             props.setProperty(prefix + "frequency", String.valueOf(rx.getFrequency()));
             props.setProperty(prefix + "gain", String.valueOf(rx.getGain()));
-            props.setProperty(prefix + "orientation.x", String.valueOf(rx.getOrientation().x));
-            props.setProperty(prefix + "orientation.y", String.valueOf(rx.getOrientation().y));
-            props.setProperty(prefix + "orientation.z", String.valueOf(rx.getOrientation().z));
+            props.setProperty(prefix + "azimuth", String.valueOf(rx.getAzimuthDeg()));
+            props.setProperty(prefix + "elevation", String.valueOf(rx.getElevationDeg()));
         }
 
         // Trajectory (constant velocity)
@@ -145,13 +144,15 @@ public class ScenarioPersistence {
                 Double.parseDouble(props.getProperty(prefix + "gain", "0"))
             );
 
-            String roxStr = props.getProperty(prefix + "orientation.x");
-            if (roxStr != null) {
-                rx.setOrientation(new Vector3D(
-                    Double.parseDouble(roxStr),
-                    Double.parseDouble(props.getProperty(prefix + "orientation.y", "0")),
-                    Double.parseDouble(props.getProperty(prefix + "orientation.z", "0"))
-                ));
+            // Older files stored azimuth/elevation as orientation.x / orientation.y
+            String azimuth = props.getProperty(prefix + "azimuth",
+                props.getProperty(prefix + "orientation.x", "0"));
+            String elevation = props.getProperty(prefix + "elevation",
+                props.getProperty(prefix + "orientation.y", "0"));
+            try {
+                rx.setOrientation(Double.parseDouble(azimuth), Double.parseDouble(elevation));
+            } catch (IllegalArgumentException e) {
+                throw new IOException("Invalid orientation for receiver " + rx.getId() + ": " + e.getMessage());
             }
 
             receivers.add(rx);

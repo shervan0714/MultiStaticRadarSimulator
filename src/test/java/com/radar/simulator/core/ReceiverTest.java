@@ -37,11 +37,41 @@ public class ReceiverTest {
     @Test
     public void testReceiverOrientationUpdate() {
         Receiver rx = new Receiver("RX1", new Vector3D(0, 0, 0), 10e9, 0);
-        assertEquals(0, rx.getOrientation().x, 0.001);
+        assertEquals(0, rx.getAzimuthDeg(), 0.001);
+        assertEquals(0, rx.getElevationDeg(), 0.001);
 
-        rx.setOrientation(new Vector3D(45, 30, 0));
-        assertEquals(45, rx.getOrientation().x, 0.001);
-        assertEquals(30, rx.getOrientation().y, 0.001);
+        rx.setOrientation(45, 30);
+        assertEquals(45, rx.getAzimuthDeg(), 0.001);
+        assertEquals(30, rx.getElevationDeg(), 0.001);
+    }
+
+    @Test
+    public void testBoresightFollowsDesignDocConvention() {
+        Receiver rx = new Receiver("RX1", new Vector3D(0, 0, 0), 10e9, 0);
+
+        // Default: East, horizontal
+        assertVector(1, 0, 0, rx.getBoresight());
+        // Azimuth is counter-clockwise from East: 90 degrees = North
+        rx.setOrientation(90, 0);
+        assertVector(0, 1, 0, rx.getBoresight());
+        // Elevation 90 = straight up
+        rx.setOrientation(0, 90);
+        assertVector(0, 0, 1, rx.getBoresight());
+        // Azimuth 180, elevation 30: West and upwards, unit length
+        rx.setOrientation(180, 30);
+        assertVector(-Math.cos(Math.toRadians(30)), 0, 0.5, rx.getBoresight());
+        assertEquals(1.0, rx.getBoresight().magnitude(), 1e-12);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testElevationOutOfRangeRejected() {
+        new Receiver("RX1", new Vector3D(0, 0, 0), 10e9, 0).setOrientation(0, 95);
+    }
+
+    private static void assertVector(double x, double y, double z, Vector3D v) {
+        assertEquals(x, v.x, 1e-9);
+        assertEquals(y, v.y, 1e-9);
+        assertEquals(z, v.z, 1e-9);
     }
 
     @Test

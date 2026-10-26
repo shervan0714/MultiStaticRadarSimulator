@@ -76,7 +76,7 @@ public class SimulatorController {
         left.setPadding(new Insets(0, 10, 10, 10));
         ScrollPane scroll = new ScrollPane(left);
         scroll.setFitToWidth(true);
-        scroll.setPrefWidth(440);
+        scroll.setPrefWidth(475);
         root.setLeft(scroll);
 
         SplitPane center = new SplitPane(visualization.getPane(), results.getPane());

@@ -55,6 +55,7 @@ public class Visualization3D {
 
     private static final Color TX_COLOR = Color.web("#e53935");
     private static final Color RX_COLOR = Color.web("#1e88e5");
+    private static final Color BORESIGHT_COLOR = Color.web("#ffd54f");
     private static final Color TRUTH_COLOR = Color.web("#43a047");
     private static final Color ESTIMATE_COLOR = Color.web("#fb8c00");
     private static final Color GRID_COLOR = Color.web("#4a4a80");
@@ -152,6 +153,10 @@ public class Visualization3D {
             if (Math.abs(p.z) > 1e-9) {
                 world.getChildren().add(line(new Vector3D(p.x, p.y, 0), p, 1.0, RX_COLOR.darker()));
             }
+            // Antenna facing direction (boresight), 8% of the scene size long
+            Vector3D tip = p.add(rx.getBoresight().scale(0.08 * SCENE_SIZE / transform.getScale()));
+            world.getChildren().add(line(p, tip, 1.6, BORESIGHT_COLOR));
+            world.getChildren().add(sphere(tip, 0.004 * SCENE_SIZE, BORESIGHT_COLOR));
         }
 
         List<Integer> drawn = SceneTransform.sampleIndices(records.size(), MAX_DRAWN_POINTS);
@@ -373,7 +378,8 @@ public class Visualization3D {
             swatch(TX_COLOR), legendText(" Transmitter    "),
             swatch(RX_COLOR), legendText(" Receiver    "),
             swatch(TRUTH_COLOR), legendText(" True trajectory    "),
-            swatch(ESTIMATE_COLOR), legendText(" Estimate\n"),
+            swatch(ESTIMATE_COLOR), legendText(" Estimate    "),
+            swatch(BORESIGHT_COLOR), legendText(" Receiver facing direction\n"),
             legendText("Axes: red = East (+X), green = North (+Y), blue = Up (+Z)\n"
                 + "Drag to rotate, scroll to zoom"));
         legend.setStyle("-fx-background-color: rgba(0,0,0,0.35); -fx-padding: 6;");
