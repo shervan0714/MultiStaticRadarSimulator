@@ -193,6 +193,21 @@ public class ExperimentRunnerTest {
         assertEquals(0.3, records.get(3).time(), 1e-12);
     }
 
+    @Test
+    public void testSeededNoisyRunIsReproducible() {
+        List<ExperimentRecord> first = new ExperimentRunner(createValidScenario(),
+            new BaselineMeasurementModel(5.0, 42L), new BaselineLocalizationModel()).run(10.0, 1.0);
+        List<ExperimentRecord> second = new ExperimentRunner(createValidScenario(),
+            new BaselineMeasurementModel(5.0, 42L), new BaselineLocalizationModel()).run(10.0, 1.0);
+
+        for (int i = 0; i < first.size(); i++) {
+            assertEquals(first.get(i).positionError(), second.get(i).positionError(), 0.0);
+        }
+        assertTrue("noise must produce a non-zero error", first.get(3).positionError() > 0);
+        assertEquals("BaselineMeasurement", first.get(0).measurementModelDescriptor().name());
+        assertEquals("1.1 noise=5.0m seed=42", first.get(0).measurementModelDescriptor().version());
+    }
+
     // --- Helper ---
 
     private Scenario createValidScenario() {

@@ -34,6 +34,11 @@ import java.util.List;
  *   --duration &lt;s&gt;   Simulation duration in seconds (default: 10)
  *   --timestep &lt;s&gt;   Time step in seconds (default: 1)
  *   --receivers &lt;n&gt;  Number of receivers: 3, 4, or 5 (default: 3)
+ *   --noise &lt;m&gt;      Range noise standard deviation in metres (default: 0, noiseless)
+ *   --seed &lt;n&gt;       Random seed for the noise (default: 42)
+ *
+ * When --load is used, --noise and --seed given on the command line override
+ * the values stored in the file.
  */
 public class CLISimulatorApp {
 
@@ -51,6 +56,8 @@ public class CLISimulatorApp {
         double duration = 10.0;
         double timeStep = 1.0;
         int receiverCount = 3;
+        Double noiseArg = null;
+        Long seedArg = null;
 
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
@@ -60,12 +67,16 @@ public class CLISimulatorApp {
                 case "--duration": duration = Double.parseDouble(args[++i]); break;
                 case "--timestep": timeStep = Double.parseDouble(args[++i]); break;
                 case "--receivers": receiverCount = Integer.parseInt(args[++i]); break;
+                case "--noise":    noiseArg = Double.parseDouble(args[++i]); break;
+                case "--seed":     seedArg = Long.parseLong(args[++i]); break;
             }
         }
 
         // Build or load scenario
         Scenario scenario;
         ScenarioPersistence persistence = new ScenarioPersistence();
+        double rangeNoiseStd = 0.0;
+        long noiseSeed = 42L;
 
         if (loadFile != null) {
             System.out.println("[LOAD] Loading scenario from: " + loadFile);
@@ -74,6 +85,8 @@ public class CLISimulatorApp {
                 double[] simParams = persistence.loadSimulationParameters(loadFile);
                 duration = simParams[0];
                 timeStep = simParams[1];
+                rangeNoiseStd = simParams[2];
+                noiseSeed = (long) simParams[3];
                 System.out.println("[LOAD] Loaded successfully.");
             } catch (IOException e) {
                 System.err.println("[ERROR] Failed to load scenario: " + e.getMessage());
@@ -82,6 +95,9 @@ public class CLISimulatorApp {
         } else {
             scenario = buildDefaultScenario(receiverCount);
         }
+
+        if (noiseArg != null) rangeNoiseStd = noiseArg;
+        if (seedArg != null) noiseSeed = seedArg;
 
         // Print scenario summary
         printScenarioSummary(scenario, duration, timeStep);
@@ -103,7 +119,7 @@ public class CLISimulatorApp {
         // Save scenario if requested
         if (saveFile != null) {
             try {
-                persistence.saveScenario(scenario, duration, timeStep, saveFile);
+                persistence.saveScenario(scenario, duration, timeStep, rangeNoiseStd, noiseSeed, saveFile);
                 System.out.println("[SAVE] Scenario saved to: " + saveFile);
             } catch (IOException e) {
                 System.err.println("[WARN] Failed to save scenario: " + e.getMessage());
@@ -111,7 +127,13 @@ public class CLISimulatorApp {
         }
 
         // Run experiment
-        MeasurementModel measModel = new BaselineMeasurementModel();
+        MeasurementModel measModel;
+        try {
+            measModel = new BaselineMeasurementModel(rangeNoiseStd, noiseSeed);
+        } catch (IllegalArgumentException e) {
+            System.err.println("[ERROR] " + e.getMessage());
+            return;
+        }
         LocalizationModel locModel = new BaselineLocalizationModel();
         ExperimentRunner runner = new ExperimentRunner(scenario, measModel, locModel);
 

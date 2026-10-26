@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Baseline implementation of a measurement model.
@@ -24,13 +25,53 @@ import java.util.Map;
  *       receiver's boresight; positive azimuth is anticlockwise (to the left
  *       when looking along the boresight), positive elevation is upwards.</li>
  * </ul>
+ *
+ * Optional measurement noise: zero-mean Gaussian noise with standard
+ * deviation {@code rangeNoiseStd} is added to each bistatic range (and so to
+ * the time delay). The random generator is seeded, so the same seed gives
+ * exactly the same noisy measurements for the same run. Angles and power
+ * stay noiseless.
  */
 public class BaselineMeasurementModel implements MeasurementModel {
     private static final double SPEED_OF_LIGHT = 3e8;
 
+    private final double rangeNoiseStd;
+    private final long seed;
+    private final Random random;
+
+    /** Noiseless measurements. */
+    public BaselineMeasurementModel() {
+        this(0.0, 0L);
+    }
+
+    /**
+     * @param rangeNoiseStd standard deviation of the range noise in metres (0 = noiseless)
+     * @param seed          random seed, so noisy runs are reproducible
+     * @throws IllegalArgumentException if the standard deviation is negative or not finite
+     */
+    public BaselineMeasurementModel(double rangeNoiseStd, long seed) {
+        if (!(rangeNoiseStd >= 0) || !Double.isFinite(rangeNoiseStd)) {
+            throw new IllegalArgumentException("Range noise standard deviation must be >= 0");
+        }
+        this.rangeNoiseStd = rangeNoiseStd;
+        this.seed = seed;
+        this.random = new Random(seed);
+    }
+
+    /**
+     * The version includes the noise settings when noise is on, so every
+     * record and CSV row says exactly how its measurements were produced.
+     */
     @Override
     public ModelDescriptor getDescriptor() {
-        return new ModelDescriptor("BaselineMeasurement", "1.1");
+        String version = rangeNoiseStd > 0
+            ? String.format("1.1 noise=%sm seed=%d", rangeNoiseStd, seed)
+            : "1.1";
+        return new ModelDescriptor("BaselineMeasurement", version);
+    }
+
+    public double getRangeNoiseStd() {
+        return rangeNoiseStd;
     }
 
     @Override
@@ -46,6 +87,9 @@ public class BaselineMeasurementModel implements MeasurementModel {
             // Distance from target to receiver
             double distTargetRx = targetPosition.distance(receiver.getPosition());
             double bistaticRange = distTxTarget + distTargetRx;
+            if (rangeNoiseStd > 0) {
+                bistaticRange += random.nextGaussian() * rangeNoiseStd;
+            }
             double timeDelay = bistaticRange / SPEED_OF_LIGHT;
 
             // Calculate received power using the physics model

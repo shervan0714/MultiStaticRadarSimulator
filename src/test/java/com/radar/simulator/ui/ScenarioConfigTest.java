@@ -65,6 +65,25 @@ public class ScenarioConfigTest {
     }
 
     @Test
+    public void testRejectsNegativeRangeNoise() {
+        ScenarioConfig base = ScenarioConfig.defaultConfig();
+        assertInvalid(new ScenarioConfig(base.transmitterPosition(), base.frequencyHz(),
+            base.transmitPowerW(), base.receivers(), base.initialPosition(), base.velocity(),
+            base.duration(), base.timeStep(), -1.0, 7L), "Range noise");
+    }
+
+    @Test
+    public void testNoiseSettingsReachTheMeasurementModel() {
+        ScenarioConfig base = ScenarioConfig.defaultConfig();
+        ScenarioConfig noisy = new ScenarioConfig(base.transmitterPosition(), base.frequencyHz(),
+            base.transmitPowerW(), base.receivers(), base.initialPosition(), base.velocity(),
+            base.duration(), base.timeStep(), 2.5, 7L);
+        assertEquals(2.5, noisy.measurementModel().getRangeNoiseStd(), EPSILON);
+        assertEquals("1.1 noise=2.5m seed=7", noisy.measurementModel().getDescriptor().version());
+        assertEquals("1.1", base.measurementModel().getDescriptor().version());
+    }
+
+    @Test
     public void testRejectsElevationOutOfRange() {
         assertInvalid(withReceivers(List.of(
             new ScenarioConfig.ReceiverConfig("RX1", 1000, 0, 0, 10, 0, 120))), "Elevation of RX1");
@@ -74,7 +93,8 @@ public class ScenarioConfigTest {
     public void testRoundTripThroughScenario() {
         ScenarioConfig original = ScenarioConfig.defaultConfig();
         ScenarioConfig copy = ScenarioConfig.fromScenario(
-            original.toScenario(), original.duration(), original.timeStep());
+            original.toScenario(), original.duration(), original.timeStep(),
+            original.rangeNoiseStd(), original.noiseSeed());
 
         assertEquals(original, copy);
     }

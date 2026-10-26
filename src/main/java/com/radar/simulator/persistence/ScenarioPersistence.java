@@ -31,7 +31,7 @@ import java.util.*;
 public class ScenarioPersistence {
 
     /**
-     * Save a scenario configuration to a properties-style text file.
+     * Save a noiseless scenario configuration to a properties-style text file.
      *
      * @param scenario the scenario to save
      * @param duration simulation duration
@@ -40,6 +40,19 @@ public class ScenarioPersistence {
      * @throws IOException if writing fails
      */
     public void saveScenario(Scenario scenario, double duration, double timeStep,
+                             String filePath) throws IOException {
+        saveScenario(scenario, duration, timeStep, 0.0, 0L, filePath);
+    }
+
+    /**
+     * Save a scenario configuration, including the measurement-noise settings,
+     * to a properties-style text file.
+     *
+     * @param rangeNoiseStd range noise standard deviation in metres (0 = noiseless)
+     * @param noiseSeed     random seed for the noise
+     */
+    public void saveScenario(Scenario scenario, double duration, double timeStep,
+                             double rangeNoiseStd, long noiseSeed,
                              String filePath) throws IOException {
         Properties props = new Properties();
 
@@ -88,6 +101,8 @@ public class ScenarioPersistence {
         // Simulation parameters
         props.setProperty("simulation.duration", String.valueOf(duration));
         props.setProperty("simulation.timeStep", String.valueOf(timeStep));
+        props.setProperty("simulation.rangeNoiseStd", String.valueOf(rangeNoiseStd));
+        props.setProperty("simulation.noiseSeed", String.valueOf(noiseSeed));
 
         try (OutputStream out = Files.newOutputStream(Paths.get(filePath))) {
             props.store(out, "Multi-Static Radar Simulator - Scenario Configuration");
@@ -184,7 +199,8 @@ public class ScenarioPersistence {
      * Read simulation parameters from a saved scenario file.
      *
      * @param filePath path to the scenario file
-     * @return array of [duration, timeStep]
+     * @return array of [duration, timeStep, rangeNoiseStd, noiseSeed];
+     *         files without noise settings give noise 0 and seed 0
      * @throws IOException if reading fails
      */
     public double[] loadSimulationParameters(String filePath) throws IOException {
@@ -194,7 +210,9 @@ public class ScenarioPersistence {
         }
         double duration = Double.parseDouble(props.getProperty("simulation.duration", "10.0"));
         double timeStep = Double.parseDouble(props.getProperty("simulation.timeStep", "1.0"));
-        return new double[]{duration, timeStep};
+        double rangeNoiseStd = Double.parseDouble(props.getProperty("simulation.rangeNoiseStd", "0"));
+        double noiseSeed = Long.parseLong(props.getProperty("simulation.noiseSeed", "0"));
+        return new double[]{duration, timeStep, rangeNoiseStd, noiseSeed};
     }
 
     /**

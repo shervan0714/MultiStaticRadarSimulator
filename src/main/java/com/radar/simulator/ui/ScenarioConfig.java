@@ -4,6 +4,7 @@ import com.radar.simulator.scenario.ConstantVelocityTrajectory;
 import com.radar.simulator.scenario.Scenario;
 import com.radar.simulator.core.Receiver;
 import com.radar.simulator.core.Transmitter;
+import com.radar.simulator.measurement.BaselineMeasurementModel;
 import com.radar.simulator.util.Vector3D;
 
 import java.util.ArrayList;
@@ -26,6 +27,8 @@ import java.util.Set;
  * @param velocity            constant drone velocity (m/s)
  * @param duration            simulated time span (s)
  * @param timeStep            time between samples (s)
+ * @param rangeNoiseStd       standard deviation of the range noise (m); 0 = noiseless
+ * @param noiseSeed           random seed, so noisy runs can be reproduced exactly
  */
 public record ScenarioConfig(
     Vector3D transmitterPosition,
@@ -35,8 +38,18 @@ public record ScenarioConfig(
     Vector3D initialPosition,
     Vector3D velocity,
     double duration,
-    double timeStep
+    double timeStep,
+    double rangeNoiseStd,
+    long noiseSeed
 ) {
+
+    /** Noiseless configuration. */
+    public ScenarioConfig(Vector3D transmitterPosition, double frequencyHz, double transmitPowerW,
+                          List<ReceiverConfig> receivers, Vector3D initialPosition, Vector3D velocity,
+                          double duration, double timeStep) {
+        this(transmitterPosition, frequencyHz, transmitPowerW, receivers, initialPosition, velocity,
+            duration, timeStep, 0.0, 0L);
+    }
 
     /**
      * One receiver row in the editor. Orientation uses the design doc convention:
@@ -70,7 +83,8 @@ public record ScenarioConfig(
             ),
             new Vector3D(-3000, -2000, 300),
             new Vector3D(60, 40, 5),
-            100.0, 1.0
+            100.0, 1.0,
+            0.0, 42L
         );
     }
 
@@ -90,6 +104,9 @@ public record ScenarioConfig(
         requirePositive(timeStep, "Time step");
         if (timeStep > duration) {
             throw new IllegalArgumentException("Time step must not exceed the duration");
+        }
+        if (!(rangeNoiseStd >= 0) || !Double.isFinite(rangeNoiseStd)) {
+            throw new IllegalArgumentException("Range noise must be zero or a positive number of metres");
         }
 
         Set<String> ids = new HashSet<>();
@@ -123,9 +140,24 @@ public record ScenarioConfig(
     }
 
     /**
-     * Build the editor form from an existing scenario, e.g. one loaded from disk.
+     * The measurement model this configuration asks for (noiseless or seeded noise).
+     */
+    public BaselineMeasurementModel measurementModel() {
+        return new BaselineMeasurementModel(rangeNoiseStd, noiseSeed);
+    }
+
+    /**
+     * Build the editor form from an existing noiseless scenario.
      */
     public static ScenarioConfig fromScenario(Scenario scenario, double duration, double timeStep) {
+        return fromScenario(scenario, duration, timeStep, 0.0, 0L);
+    }
+
+    /**
+     * Build the editor form from an existing scenario, e.g. one loaded from disk.
+     */
+    public static ScenarioConfig fromScenario(Scenario scenario, double duration, double timeStep,
+                                              double rangeNoiseStd, long noiseSeed) {
         Transmitter tx = scenario.getTransmitter();
         List<ReceiverConfig> rows = new ArrayList<>();
         for (Receiver rx : scenario.getReceivers()) {
@@ -137,7 +169,7 @@ public record ScenarioConfig(
             tx.getPosition(), tx.getFrequency(), tx.getPower(), rows,
             scenario.getTargetTrajectory().getPosition(0),
             scenario.getTargetTrajectory().getVelocity(0),
-            duration, timeStep
+            duration, timeStep, rangeNoiseStd, noiseSeed
         );
     }
 

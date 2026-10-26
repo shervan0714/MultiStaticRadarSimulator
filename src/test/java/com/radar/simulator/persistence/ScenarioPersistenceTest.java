@@ -199,4 +199,27 @@ public class ScenarioPersistenceTest {
         assertEquals(12.0, loaded.getReceivers().get(0).getElevationDeg(), 1e-9);
         assertEquals(0.0, loaded.getReceivers().get(1).getElevationDeg(), 1e-9);
     }
+
+    @Test
+    public void testNoiseSettingsRoundTrip() throws IOException {
+        Transmitter tx = new Transmitter("TX1", new Vector3D(0, 0, 0), 2.4e9, 1000.0);
+        List<Receiver> receivers = new ArrayList<>();
+        receivers.add(new Receiver("RX1", new Vector3D(5000, 5000, 0), 2.4e9, 10.0));
+        receivers.add(new Receiver("RX2", new Vector3D(-5000, 5000, 0), 2.4e9, 10.0));
+        receivers.add(new Receiver("RX3", new Vector3D(0, -5000, 0), 2.4e9, 10.0));
+        Scenario scenario = new Scenario(tx, receivers,
+            new ConstantVelocityTrajectory(new Vector3D(0, 0, 300), new Vector3D(10, 0, 0)));
+
+        persistence.saveScenario(scenario, 30.0, 0.5, 4.5, 2024L, tempScenarioFile);
+        double[] params = persistence.loadSimulationParameters(tempScenarioFile);
+
+        assertEquals(30.0, params[0], 1e-9);
+        assertEquals(0.5, params[1], 1e-9);
+        assertEquals(4.5, params[2], 1e-9);
+        assertEquals(2024L, (long) params[3]);
+
+        // The older overload saves a noiseless scenario
+        persistence.saveScenario(scenario, 30.0, 0.5, tempScenarioFile);
+        assertEquals(0.0, persistence.loadSimulationParameters(tempScenarioFile)[2], 1e-12);
+    }
 }

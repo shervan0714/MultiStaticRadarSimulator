@@ -160,4 +160,59 @@ public class BaselineMeasurementModelTest {
         assertNotEquals(before.values().get(Quantity.AZIMUTH),
             after.values().get(Quantity.AZIMUTH), 1.0);
     }
+
+    // ----- seeded range noise -----
+
+    private static List<Double> ranges(BaselineMeasurementModel model, int samples) {
+        Transmitter tx = new Transmitter("TX1", new Vector3D(0, 0, 0), 2.4e9, 1000.0);
+        List<Receiver> rx = List.of(new Receiver("RX1", new Vector3D(6, 8, 0), 2.4e9, 10.0));
+        List<Double> out = new ArrayList<>();
+        for (int k = 0; k < samples; k++) {
+            out.add(model.generate(tx, rx, new Vector3D(3, 4, 0))
+                .perReceiver().get(0).values().get(Quantity.BISTATIC_RANGE));
+        }
+        return out;
+    }
+
+    @Test
+    public void testZeroNoiseGivesExactRange() {
+        for (double r : ranges(new BaselineMeasurementModel(0.0, 123L), 5)) {
+            assertEquals(10.0, r, 1e-12);
+        }
+    }
+
+    @Test
+    public void testSameSeedGivesIdenticalNoise() {
+        assertEquals(ranges(new BaselineMeasurementModel(5.0, 42L), 20),
+                     ranges(new BaselineMeasurementModel(5.0, 42L), 20));
+    }
+
+    @Test
+    public void testDifferentSeedGivesDifferentNoise() {
+        assertNotEquals(ranges(new BaselineMeasurementModel(5.0, 42L), 20),
+                        ranges(new BaselineMeasurementModel(5.0, 43L), 20));
+    }
+
+    @Test
+    public void testNoiseHasRequestedSpread() {
+        List<Double> r = ranges(new BaselineMeasurementModel(5.0, 1L), 4000);
+        double mean = r.stream().mapToDouble(Double::doubleValue).average().orElseThrow();
+        double var = r.stream().mapToDouble(v -> (v - mean) * (v - mean)).sum() / (r.size() - 1);
+        assertEquals("noise is zero-mean around the true 10 m range", 10.0, mean, 0.3);
+        assertEquals("sample std matches sigma", 5.0, Math.sqrt(var), 0.25);
+    }
+
+    @Test
+    public void testTimeDelayFollowsNoisyRange() {
+        Transmitter tx = new Transmitter("TX1", new Vector3D(0, 0, 0), 2.4e9, 1000.0);
+        ReceiverMeasurement rm = new BaselineMeasurementModel(5.0, 9L)
+            .generate(tx, List.of(new Receiver("RX1", new Vector3D(6, 8, 0), 2.4e9, 10.0)), new Vector3D(3, 4, 0))
+            .perReceiver().get(0);
+        assertEquals(rm.values().get(Quantity.BISTATIC_RANGE) / 3e8, rm.values().get(Quantity.TIME_DELAY), 1e-18);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testNegativeNoiseRejected() {
+        new BaselineMeasurementModel(-1.0, 0L);
+    }
 }

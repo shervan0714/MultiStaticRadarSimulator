@@ -7,7 +7,6 @@ import com.radar.simulator.experiment.ExperimentRunner;
 import com.radar.simulator.localization.BaselineLocalizationModel;
 import com.radar.simulator.localization.GeometryValidator;
 import com.radar.simulator.localization.LocalizationModel;
-import com.radar.simulator.measurement.BaselineMeasurementModel;
 import com.radar.simulator.measurement.MeasurementModel;
 import com.radar.simulator.persistence.ScenarioPersistence;
 import com.radar.simulator.scenario.Scenario;
@@ -45,8 +44,8 @@ public class SimulatorController {
     private final ResultsPanel results = new ResultsPanel();
     private final Label statusLabel = new Label();
 
-    // Replaceable formulations
-    private final MeasurementModel measurementModel = new BaselineMeasurementModel();
+    // Replaceable formulations. The measurement model is built from the form
+    // for every run (noise settings), so a seeded run is always reproducible.
     private final LocalizationModel localizationModel = new BaselineLocalizationModel();
     private final GeometryValidator geometryValidator = new GeometryValidator();
     private final ScenarioPersistence persistence = new ScenarioPersistence();
@@ -120,6 +119,7 @@ public class SimulatorController {
             return;
         }
 
+        MeasurementModel measurementModel = config.measurementModel();
         ExperimentRunner runner = new ExperimentRunner(scenario, measurementModel, localizationModel);
         List<ExperimentRecord> records = runner.run(config.duration(), config.timeStep());
         EvaluationResult evaluation = new EvaluationModule().evaluate(records);
@@ -167,7 +167,8 @@ public class SimulatorController {
             new FileChooser.ExtensionFilter("Scenario files", "*.properties"));
         if (file == null) return;
         try {
-            persistence.saveScenario(config.toScenario(), config.duration(), config.timeStep(), file.getPath());
+            persistence.saveScenario(config.toScenario(), config.duration(), config.timeStep(),
+                config.rangeNoiseStd(), config.noiseSeed(), file.getPath());
             showInfo("Saved scenario to " + file.getPath());
         } catch (IOException e) {
             showError("Could not save scenario: " + e.getMessage());
@@ -191,7 +192,8 @@ public class SimulatorController {
     public void loadScenario(File file) throws IOException {
         Scenario scenario = persistence.loadScenario(file.getPath());
         double[] timing = persistence.loadSimulationParameters(file.getPath());
-        editor.setConfig(ScenarioConfig.fromScenario(scenario, timing[0], timing[1]));
+        editor.setConfig(ScenarioConfig.fromScenario(scenario, timing[0], timing[1],
+            timing[2], (long) timing[3]));
         runExperiment();
         if (lastRecords != null) {
             statusLabel.setText("Loaded " + file.getName() + " | " + statusLabel.getText());

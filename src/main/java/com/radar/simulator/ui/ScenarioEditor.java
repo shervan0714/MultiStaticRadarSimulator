@@ -42,6 +42,8 @@ public class ScenarioEditor {
     private final TextField velZ = numberField();
     private final TextField duration = numberField();
     private final TextField timeStep = numberField();
+    private final TextField rangeNoise = numberField();
+    private final TextField noiseSeed = numberField();
 
     /** Editable fields for one receiver. */
     private final class ReceiverRow {
@@ -95,7 +97,9 @@ public class ScenarioEditor {
                 "Velocity X / Y / Z (m/s)", new HBox(4, velX, velY, velZ))),
             section("Simulation", grid(
                 "Duration (s)", duration,
-                "Time step (s)", timeStep))
+                "Time step (s)", timeStep,
+                "Range noise σ (m)", rangeNoise,
+                "Random seed", noiseSeed))
         );
         setConfig(ScenarioConfig.defaultConfig());
     }
@@ -122,6 +126,8 @@ public class ScenarioEditor {
         setVector(config.velocity(), velX, velY, velZ);
         duration.setText(format(config.duration()));
         timeStep.setText(format(config.timeStep()));
+        rangeNoise.setText(format(config.rangeNoiseStd()));
+        noiseSeed.setText(String.valueOf(config.noiseSeed()));
     }
 
     /**
@@ -142,7 +148,9 @@ public class ScenarioEditor {
             readVector(startX, startY, startZ, "Drone start"),
             readVector(velX, velY, velZ, "Drone velocity"),
             parse(duration, "Duration"),
-            parse(timeStep, "Time step")
+            parse(timeStep, "Time step"),
+            parse(rangeNoise, "Range noise"),
+            parseLong(noiseSeed, "Random seed")
         );
     }
 
@@ -224,6 +232,15 @@ public class ScenarioEditor {
 
     private static Vector3D readVector(TextField x, TextField y, TextField z, String name) {
         return new Vector3D(parse(x, name + " X"), parse(y, name + " Y"), parse(z, name + " Z"));
+    }
+
+    private static long parseLong(TextField field, String name) {
+        try {
+            return Long.parseLong(field.getText().trim());
+        } catch (NumberFormatException e) {
+            field.requestFocus();
+            throw new IllegalArgumentException(name + " must be a whole number: \"" + field.getText() + "\"");
+        }
     }
 
     private static double parse(TextField field, String name) {
