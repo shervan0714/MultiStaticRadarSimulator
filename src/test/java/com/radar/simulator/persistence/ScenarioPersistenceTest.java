@@ -172,6 +172,13 @@ public class ScenarioPersistenceTest {
     }
 
     @Test
+    public void testCsvFieldsWithCommasAreQuoted() {
+        assertEquals("BaselineLocalization_2.1", ScenarioPersistence.csvField("BaselineLocalization_2.1"));
+        assertEquals("\"Formula: f_atan2(y, x)\"", ScenarioPersistence.csvField("Formula: f_atan2(y, x)"));
+        assertEquals("\"a \"\"b\"\", c\"", ScenarioPersistence.csvField("a \"b\", c"));
+    }
+
+    @Test
     public void testEvaluationSummaryExport() throws IOException {
         EvaluationResult evaluation = new EvaluationResult(
             150.5, 300.2, 180.7, 10, 9, 1);

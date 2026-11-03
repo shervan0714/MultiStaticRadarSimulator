@@ -240,13 +240,24 @@ public class ScenarioPersistence {
                     est.x, est.y, est.z,
                     Double.isNaN(record.positionError()) ? -1.0 : record.positionError(),
                     record.estimationResult().status(),
-                    record.measurementModelDescriptor().name() + "_" +
-                        record.measurementModelDescriptor().version(),
-                    record.localizationModelDescriptor().name() + "_" +
-                        record.localizationModelDescriptor().version()
+                    csvField(record.measurementModelDescriptor().name() + "_" +
+                        record.measurementModelDescriptor().version()),
+                    csvField(record.localizationModelDescriptor().name() + "_" +
+                        record.localizationModelDescriptor().version())
                 );
             }
         }
+    }
+
+    /**
+     * Quote a CSV field if needed: user formulas in model versions can
+     * contain commas (e.g. atan2(y, x)) or quotes.
+     */
+    static String csvField(String value) {
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
     }
 
     /**
