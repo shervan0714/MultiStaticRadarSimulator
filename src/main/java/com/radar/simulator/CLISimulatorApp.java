@@ -8,7 +8,7 @@ import com.radar.simulator.localization.GeometryValidator;
 import com.radar.simulator.localization.LocalizationModel;
 import com.radar.simulator.localization.LocalizationModels;
 import com.radar.simulator.experiment.ModelComparison;
-import com.radar.simulator.measurement.BaselineMeasurementModel;
+import com.radar.simulator.formula.FormulaSet;
 import com.radar.simulator.measurement.MeasurementModel;
 import com.radar.simulator.persistence.ScenarioPersistence;
 import com.radar.simulator.scenario.ConstantVelocityTrajectory;
@@ -37,12 +37,15 @@ import java.util.List;
  *   --receivers &lt;n&gt;  Number of receivers: 3, 4, or 5 (default: 3)
  *   --noise &lt;m&gt;      Range noise standard deviation in metres (default: 0, noiseless)
  *   --seed &lt;n&gt;       Random seed for the noise (default: 42)
- *   --model &lt;key&gt;    Localization model: baseline (default) or closed-form
+ *   --model &lt;name&gt;   Localization model: baseline (default), closed-form, or the
+ *                    name of a model saved in the --load file (e.g. "Formula: Range + bias")
  *   --compare        Run every localization model on the same measurements
  *                    and print their errors side by side
  *
  * When --load is used, --noise and --seed given on the command line override
- * the values stored in the file.
+ * the values stored in the file. Formulas saved from the GUI are loaded too:
+ * a measurement formula generates the data, the saved localization model is
+ * used unless --model is given, and --compare includes every formula.
  */
 public class CLISimulatorApp {
 
@@ -62,7 +65,7 @@ public class CLISimulatorApp {
         int receiverCount = 3;
         Double noiseArg = null;
         Long seedArg = null;
-        String modelKey = "baseline";
+        String modelKey = null;
         boolean compare = false;
 
         for (int i = 0; i < args.length; i++) {
@@ -85,6 +88,7 @@ public class CLISimulatorApp {
         ScenarioPersistence persistence = new ScenarioPersistence();
         double rangeNoiseStd = 0.0;
         long noiseSeed = 42L;
+        FormulaSet formulas = FormulaSet.empty();
 
         if (loadFile != null) {
             System.out.println("[LOAD] Loading scenario from: " + loadFile);
@@ -95,6 +99,10 @@ public class CLISimulatorApp {
                 timeStep = simParams[1];
                 rangeNoiseStd = simParams[2];
                 noiseSeed = (long) simParams[3];
+                formulas = persistence.loadFormulas(loadFile);
+                if (modelKey == null) {
+                    modelKey = persistence.loadLocalizationModelName(loadFile);
+                }
                 System.out.println("[LOAD] Loaded successfully.");
             } catch (IOException e) {
                 System.err.println("[ERROR] Failed to load scenario: " + e.getMessage());
@@ -128,6 +136,7 @@ public class CLISimulatorApp {
         if (saveFile != null) {
             try {
                 persistence.saveScenario(scenario, duration, timeStep, rangeNoiseStd, noiseSeed, saveFile);
+                persistence.saveModelSettings(formulas, null, saveFile);
                 System.out.println("[SAVE] Scenario saved to: " + saveFile);
             } catch (IOException e) {
                 System.err.println("[WARN] Failed to save scenario: " + e.getMessage());
@@ -136,21 +145,26 @@ public class CLISimulatorApp {
 
         // Run experiment
         MeasurementModel measModel;
+        List<LocalizationModel> allModels;
         try {
-            measModel = new BaselineMeasurementModel(rangeNoiseStd, noiseSeed);
+            measModel = formulas.measurementModel(rangeNoiseStd, noiseSeed);
+            allModels = formulas.localizationModels();
         } catch (IllegalArgumentException e) {
             System.err.println("[ERROR] " + e.getMessage());
             return;
         }
         if (compare) {
             printComparison(ModelComparison.compare(scenario, measModel,
-                LocalizationModels.builtIns(), duration, timeStep));
+                allModels, duration, timeStep));
             return;
         }
 
         LocalizationModel locModel;
         try {
-            locModel = LocalizationModels.byKey(modelKey);
+            if (modelKey == null) modelKey = "baseline";
+            locModel = LocalizationModels.keys().contains(modelKey)
+                ? LocalizationModels.byKey(modelKey)
+                : formulas.localizationModel(modelKey);
         } catch (IllegalArgumentException e) {
             System.err.println("[ERROR] " + e.getMessage());
             return;
@@ -225,18 +239,19 @@ public class CLISimulatorApp {
      */
     private static void printComparison(List<ModelComparison.Entry> entries) {
         System.out.println("=== Model Comparison (same measurements for every model) ===");
-        System.out.printf("%-26s %-8s %-9s %-7s %-12s %-12s %-12s%n",
-            "Model", "Version", "Localized", "Failed", "Mean (m)", "Max (m)", "RMS (m)");
+        System.out.printf("%-26s %-9s %-7s %-12s %-12s %-12s %s%n",
+            "Model", "Localized", "Failed", "Mean (m)", "Max (m)", "RMS (m)", "Version");
         System.out.println("-".repeat(92));
         for (ModelComparison.Entry entry : entries) {
             EvaluationResult e = entry.evaluation();
             boolean any = e.successfulSteps() > 0;
-            System.out.printf("%-26s %-8s %-9d %-7d %-12s %-12s %-12s%n",
-                entry.localizationModel().name(), entry.localizationModel().version(),
+            System.out.printf("%-26s %-9d %-7d %-12s %-12s %-12s %s%n",
+                entry.localizationModel().name(),
                 e.successfulSteps(), e.failedSteps(),
                 any ? String.format("%.4f", e.meanError()) : "-",
                 any ? String.format("%.4f", e.maxError()) : "-",
-                any ? String.format("%.4f", e.rmsError()) : "-");
+                any ? String.format("%.4f", e.rmsError()) : "-",
+                entry.localizationModel().version());
         }
     }
 

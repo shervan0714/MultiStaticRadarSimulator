@@ -172,6 +172,33 @@ public class ScenarioPersistenceTest {
     }
 
     @Test
+    public void testFormulasAndChosenModelRoundTrip() throws IOException {
+        Scenario scenario = com.radar.simulator.ui.ScenarioConfig.defaultConfig().toScenario();
+        com.radar.simulator.formula.FormulaSet formulas = new com.radar.simulator.formula.FormulaSet(
+            List.of(new com.radar.simulator.formula.FormulaParameter("bias", 25),
+                    new com.radar.simulator.formula.FormulaParameter("k", -1.5)),
+            List.of(new com.radar.simulator.formula.FormulaDefinition("Range + bias", "d_tx + d_rx + bias"),
+                    new com.radar.simulator.formula.FormulaDefinition("Angle", "atan2(y - rx_y, x - rx_x) * k")),
+            "Range + bias");
+        persistence.saveScenario(scenario, 10, 1, 5.0, 42L, tempScenarioFile);
+        persistence.saveModelSettings(formulas, "Formula: Range + bias", tempScenarioFile);
+
+        assertEquals(formulas, persistence.loadFormulas(tempScenarioFile));
+        assertEquals("Formula: Range + bias", persistence.loadLocalizationModelName(tempScenarioFile));
+        // The scenario itself is still there
+        assertEquals(4, persistence.loadScenario(tempScenarioFile).getReceivers().size());
+        assertEquals(5.0, persistence.loadSimulationParameters(tempScenarioFile)[2], 0.0);
+    }
+
+    @Test
+    public void testFileWithoutFormulasLoadsAsBuiltIn() throws IOException {
+        Scenario scenario = com.radar.simulator.ui.ScenarioConfig.defaultConfig().toScenario();
+        persistence.saveScenario(scenario, 10, 1, tempScenarioFile);
+        assertEquals(com.radar.simulator.formula.FormulaSet.empty(), persistence.loadFormulas(tempScenarioFile));
+        assertNull(persistence.loadLocalizationModelName(tempScenarioFile));
+    }
+
+    @Test
     public void testCsvFieldsWithCommasAreQuoted() {
         assertEquals("BaselineLocalization_2.1", ScenarioPersistence.csvField("BaselineLocalization_2.1"));
         assertEquals("\"Formula: f_atan2(y, x)\"", ScenarioPersistence.csvField("Formula: f_atan2(y, x)"));

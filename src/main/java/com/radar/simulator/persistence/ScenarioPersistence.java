@@ -2,6 +2,9 @@ package com.radar.simulator.persistence;
 
 import com.radar.simulator.experiment.EvaluationResult;
 import com.radar.simulator.experiment.ExperimentRecord;
+import com.radar.simulator.formula.FormulaDefinition;
+import com.radar.simulator.formula.FormulaParameter;
+import com.radar.simulator.formula.FormulaSet;
 import com.radar.simulator.scenario.ConstantVelocityTrajectory;
 import com.radar.simulator.scenario.Scenario;
 import com.radar.simulator.scenario.TrajectoryModel;
@@ -23,7 +26,9 @@ import java.util.*;
  *   <li>Transmitter configuration (position, frequency, power, orientation)</li>
  *   <li>Receiver configurations (position, frequency, gain, azimuth/elevation)</li>
  *   <li>Trajectory parameters (initial position, velocity)</li>
- *   <li>Simulation parameters (duration, time step)</li>
+ *   <li>Simulation parameters (duration, time step, noise and seed)</li>
+ *   <li>Optionally, the user's formulas and parameters and the chosen
+ *       localization model ({@link #saveModelSettings})</li>
  * </ul>
  *
  * Experiment results can be exported to CSV for downstream analysis.
@@ -193,6 +198,80 @@ public class ScenarioPersistence {
         }
 
         return new Scenario(tx, receivers, trajectory);
+    }
+
+    /**
+     * Add the user's formulas, parameters and chosen localization model to an
+     * already saved scenario file, so a run that uses them can be reproduced.
+     *
+     * @param localizationModel display name of the chosen model (may be null)
+     */
+    public void saveModelSettings(FormulaSet formulas, String localizationModel,
+                                  String filePath) throws IOException {
+        Properties props = readProperties(filePath);
+        props.setProperty("formula.parameter.count", String.valueOf(formulas.parameters().size()));
+        for (int i = 0; i < formulas.parameters().size(); i++) {
+            FormulaParameter p = formulas.parameters().get(i);
+            props.setProperty("formula.parameter." + i + ".name", p.name());
+            props.setProperty("formula.parameter." + i + ".value", String.valueOf(p.value()));
+        }
+        props.setProperty("formula.count", String.valueOf(formulas.formulas().size()));
+        for (int i = 0; i < formulas.formulas().size(); i++) {
+            FormulaDefinition f = formulas.formulas().get(i);
+            props.setProperty("formula." + i + ".name", f.name());
+            props.setProperty("formula." + i + ".expression", f.expression());
+        }
+        props.setProperty("formula.measurement",
+            formulas.measurementFormula() == null ? "" : formulas.measurementFormula());
+        if (localizationModel != null) {
+            props.setProperty("simulation.localizationModel", localizationModel);
+        }
+        try (OutputStream out = Files.newOutputStream(Paths.get(filePath))) {
+            props.store(out, "Multi-Static Radar Simulator - Scenario Configuration");
+        }
+    }
+
+    /**
+     * Read the user's formulas and parameters; a file without them (e.g. an
+     * older one) gives no formulas and built-in measurements.
+     */
+    public FormulaSet loadFormulas(String filePath) throws IOException {
+        Properties props = readProperties(filePath);
+        try {
+            List<FormulaParameter> parameters = new ArrayList<>();
+            int parameterCount = Integer.parseInt(props.getProperty("formula.parameter.count", "0"));
+            for (int i = 0; i < parameterCount; i++) {
+                parameters.add(new FormulaParameter(
+                    props.getProperty("formula.parameter." + i + ".name", ""),
+                    Double.parseDouble(props.getProperty("formula.parameter." + i + ".value", "0"))));
+            }
+            List<FormulaDefinition> formulas = new ArrayList<>();
+            int formulaCount = Integer.parseInt(props.getProperty("formula.count", "0"));
+            for (int i = 0; i < formulaCount; i++) {
+                formulas.add(new FormulaDefinition(
+                    props.getProperty("formula." + i + ".name", ""),
+                    props.getProperty("formula." + i + ".expression", "")));
+            }
+            return new FormulaSet(parameters, formulas, props.getProperty("formula.measurement"));
+        } catch (NumberFormatException e) {
+            throw new IOException("Invalid formula settings: " + e.getMessage());
+        }
+    }
+
+    /**
+     * The localization model chosen when the file was saved, or null if the
+     * file does not say.
+     */
+    public String loadLocalizationModelName(String filePath) throws IOException {
+        return readProperties(filePath).getProperty("simulation.localizationModel");
+    }
+
+    private static Properties readProperties(String filePath) throws IOException {
+        Properties props = new Properties();
+        try (InputStream in = Files.newInputStream(Paths.get(filePath))) {
+            props.load(in);
+        }
+        return props;
     }
 
     /**

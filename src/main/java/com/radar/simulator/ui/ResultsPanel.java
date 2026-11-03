@@ -68,7 +68,8 @@ public class ResultsPanel {
     }
 
     public void show(List<ExperimentRecord> records, EvaluationResult evaluation) {
-        summary.setText(SimulatorController.formatMetrics(evaluation));
+        String model = records.isEmpty() ? "" : records.get(0).localizationModelDescriptor().name() + " | ";
+        summary.setText(model + SimulatorController.formatMetrics(evaluation));
         table.setItems(FXCollections.observableArrayList(records));
     }
 
