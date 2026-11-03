@@ -42,7 +42,7 @@ Repo: `github.com/shervan0714/MultiStaticRadarSimulator` · Author: E. Sai Sherv
 
 | Command (run in `MultiStaticRadarSimulator/`) | What it does |
 |---|---|
-| `gradlew.bat test` | Compile + run all 131 JUnit 4 tests |
+| `gradlew.bat test` | Compile + run all 160 JUnit 4 tests |
 | `gradlew.bat run` | Open the JavaFX GUI (`RadarSimulatorApp`) |
 | `gradlew.bat runCli` | Run the pipeline in the terminal (`CLISimulatorApp`) |
 | `gradlew.bat runCli --args="--receivers 4 --duration 10 --timestep 1"` | CLI with options |
@@ -78,10 +78,16 @@ JavaFX draws with **+Y pointing down**, so the 3D view converts with `SceneTrans
  EvaluationModule.evaluate(records) → EvaluationResult (mean, max, RMS over successful steps)
                                                                       ▼
  GUI: Visualization3D (3D) + ResultsPanel (table) + status line      CLI: printed table + summary
- ScenarioPersistence: save/load scenario (.properties), export CSV + summary .txt
+ ScenarioPersistence: save/load scenario (.properties, incl. formulas), export CSV + summary .txt
+
+ Comparison: ModelComparison.compare(scenario, measurementModel, [models…]) runs the loop above once per
+ localization model, generating the measurements once and replaying them, so every model sees the same data.
+ Models available: BaselineLocalizationModel, ClosedFormLocalizationModel, and one FormulaLocalizationModel
+ per formula typed in the GUI (FormulaEditor → FormulaSet). A formula can also generate the measurements
+ (FormulaMeasurementModel).
 ```
 
-**2-minute explanation:** The user configures a scenario in the form (or the CLI). It is validated for geometry problems first. The `ExperimentRunner` then loops over time: the trajectory gives the true drone position, the measurement model turns it into per-receiver bistatic ranges, and the localization model solves for the position from those ranges. Each step is stored as an `ExperimentRecord`; `EvaluationModule` turns all records into mean/max/RMS error. The GUI shows the true path (green), estimates (orange), sensors and per-step errors; the same pipeline runs in the CLI. Formulations sit behind interfaces so the stakeholder's model can replace the baseline without touching the rest.
+**2-minute explanation:** The user configures a scenario in the form (or the CLI). It is validated for geometry problems first. The `ExperimentRunner` then loops over time: the trajectory gives the true drone position, the measurement model turns it into per-receiver bistatic ranges, and the localization model solves for the position from those ranges. Each step is stored as an `ExperimentRecord`; `EvaluationModule` turns all records into mean/max/RMS error. The GUI shows the true path (green), estimates (orange), sensors and per-step errors; the same pipeline runs in the CLI. Formulations sit behind interfaces so the stakeholder's model can replace the baseline without touching the rest; he can even type a formula in the GUI and compare it with the built-in models without any code change.
 
 ---
 
@@ -89,7 +95,7 @@ JavaFX draws with **+Y pointing down**, so the 3D view converts with `SceneTrans
 
 ### Entry points
 - **`RadarSimulatorApp`** — JavaFX `Application`. `start()` creates `SimulatorController`, a 1400×900 scene, calls `controller.runExperiment()` (so the default scenario is shown), shows the window. `stop()` calls `System.exit(0)`.
-- **`CLISimulatorApp`** — `main(String[] args)`. Defaults: `duration = 10.0`, `timeStep = 1.0`, `receiverCount = 3`. Parses args in a `for` loop with `switch (args[i])`: `--save`, `--load`, `--export`, `--duration`, `--timestep`, `--receivers` (each reads the value with `args[++i]`; unknown args are ignored). Then: build/load scenario → print summary → validate geometry (prints `[GEOMETRY]`, each warning as `[WARN]`, stops if invalid) → optional save → `ExperimentRunner.run` with `BaselineMeasurementModel` + `BaselineLocalizationModel` → prints per-step table and `=== Evaluation Summary ===` → optional CSV export (+ `_summary.txt`). `buildDefaultScenario(int receiverCount)`: TX at (0,0,0), 2.4 GHz, 1000 W; RX1 (5000,5000,0), RX2 (−5000,5000,0), RX3 (0,−5000,0), RX4 (−5000,−5000,0) if ≥4, RX5 (0,0,5000) if ≥5; drone starts (1000,2000,100), velocity (50,0,0).
+- **`CLISimulatorApp`** — `main(String[] args)`. Defaults: `duration = 10.0`, `timeStep = 1.0`, `receiverCount = 3`. Parses args in a `for` loop with `switch (args[i])`: `--save`, `--load`, `--export`, `--duration`, `--timestep`, `--receivers`, `--noise`, `--seed`, `--model`, `--compare` (values read with `args[++i]`; unknown args are ignored). Then: build/load scenario (with `--load` also its formulas and saved model name) → print summary → validate geometry (prints `[GEOMETRY]`, each warning as `[WARN]`, stops if invalid) → optional save → measurement model from `formulas.measurementModel(noise, seed)` → with `--compare`: `ModelComparison` over `formulas.localizationModels()` and `printComparison` (one row per model), then stop; otherwise `ExperimentRunner.run` with the model from `--model` (a `LocalizationModels` key, or a formula display name), default `baseline` → prints per-step table and `=== Evaluation Summary ===` → optional CSV export (+ `_summary.txt`). `buildDefaultScenario(int receiverCount)`: TX at (0,0,0), 2.4 GHz, 1000 W; RX1 (5000,5000,0), RX2 (−5000,5000,0), RX3 (0,−5000,0), RX4 (−5000,−5000,0) if ≥4, RX5 (0,0,5000) if ≥5; drone starts (1000,2000,100), velocity (50,0,0).
 
 ### `core/` — entities and shared types
 - **`Transmitter(String id, Vector3D position, double frequency, double power)`** — getters/setters; `orientation` (Vector3D, default 0,0,0; not used in maths). Getters return **copies** of vectors.
@@ -112,7 +118,11 @@ JavaFX draws with **+Y pointing down**, so the 3D view converts with `SceneTrans
 
 ### `localization/`
 - **`LocalizationModel`** (interface) — `ModelDescriptor getDescriptor()`, `EstimationResult estimate(Transmitter, List<Receiver>, Measurement)`.
-- **`BaselineLocalizationModel`** — descriptor `("BaselineLocalization", "2.1")`. See Section 7. Constants: `MAX_CONDITION_NUMBER = 1e8` (package-private), `MAX_ITERATIONS = 200`, `START_DIRECTIONS` (8 directions).
+- **`BaselineLocalizationModel`** — descriptor `("BaselineLocalization", "2.1")`. See Section 7. Only collects the ranges (`BistaticRanges.collect`) and picks the starting points (sensor centroid, scale = mean range / 2); the solving is in `LeastSquaresSolver`.
+- **`ClosedFormLocalizationModel`** — descriptor `("ClosedFormLocalization", "1.0")`. Non-iterative second formulation, see Section 7. Static helper `nonNegativeRoots(a, b, c)` (package-private).
+- **`LeastSquaresSolver`** — shared Levenberg–Marquardt. Nested interface `Problem { int size(); double residual(int i, Vector3D p); default double[] gradient(int i, Vector3D p) }` (default = central difference, step 1e-3 m). Static: `startingPoints(centre, scale)` (8 `START_DIRECTIONS`), `solve(starts, problem)` (multi-start → `selectCandidate` → `result`), `result(position, problem)` (RMS residual + condition number, status `NUMERICALLY_UNSTABLE` if cond > `MAX_CONDITION_NUMBER = 1e8`), `failure(Status)` (position (0,0,0), NaN residual/cond), `selectCandidate`, `rmsResidual`, `conditionNumber`. `MAX_ITERATIONS = 200` (package-private).
+- **`BistaticRanges`** (package-private) — implements `Problem` for `|p − t| + |p − r_i| − m_i` with the analytic gradient. `collect(tx, receivers, measurement)` matches by receiver ID; `failure()` is non-null (INVALID_INPUT / UNDER_CONSTRAINED) if the measurements can't be used. Fields `tx`, `receiverPositions`, `ranges`.
+- **`LocalizationModels`** — registry: `keys()` → `["baseline", "closed-form"]`, `builtIns()`, `byKey(key)` (unknown key → `IllegalArgumentException` listing the keys).
 - **`EstimationResult(Vector3D position, Status status, double residual, double conditionNumber)`** — record. Failures use position (0,0,0) and NaN residual/condition number.
 - **`Status`** — enum `SUCCESS, UNDER_CONSTRAINED, NUMERICALLY_UNSTABLE, INVALID_INPUT`.
 - **`GeometryValidator`** — `ValidationResult validate(Transmitter, List<Receiver>)`. Nested record `ValidationResult(boolean isValid, Status status, String message, List<String> warnings)` with a 3-arg constructor (no warnings) and `hasWarnings()`. Constants: `MIN_RECEIVERS = 3`, `MIN_BASELINE_METRES = 1.0`, `FLATNESS_THRESHOLD = 1e-6`. Check order: null TX → INVALID_INPUT; no receivers → INVALID_INPUT; < 3 → UNDER_CONSTRAINED; duplicate IDs → INVALID_INPUT; two receivers closer than 1 m → NUMERICALLY_UNSTABLE; collinear sensors → UNDER_CONSTRAINED; coplanar sensors → valid + warning.
@@ -122,21 +132,32 @@ JavaFX draws with **+Y pointing down**, so the 3D view converts with `SceneTrans
 - **`ExperimentRecord(int stepIndex, double time, Vector3D groundTruthPosition, Vector3D groundTruthVelocity, Measurement measurement, EstimationResult estimationResult, ModelDescriptor measurementModelDescriptor, ModelDescriptor localizationModelDescriptor, double positionError)`** — record.
 - **`EvaluationModule`** — `EvaluationResult evaluate(List<ExperimentRecord>)`; throws on null/empty; only `SUCCESS` steps count toward the errors; all failed → NaN metrics.
 - **`EvaluationResult(double meanError, double maxError, double rmsError, int totalSteps, int successfulSteps, int failedSteps)`** — record.
+- **`ModelComparison`** — `static List<Entry> compare(Scenario, MeasurementModel, List<LocalizationModel>, duration, timeStep)`; nested record `Entry(ModelDescriptor localizationModel, List<ExperimentRecord> records, EvaluationResult evaluation)`. A private `ReplayingMeasurementModel` records the first run's measurements and replays them for the other models.
+
+### `formula/` — formulations typed in the GUI
+- **`FormulaParameter(String name, double value)`**, **`FormulaDefinition(String name, String expression)`** — records.
+- **`CustomFormula`** — `compile(FormulaDefinition, List<FormulaParameter>)` (throws `IllegalArgumentException` starting `Formula "<name>": …`; also if the formula uses none of `x y z d_tx d_rx`). `evaluate(Vector3D target, Transmitter, Receiver)`. `BUILT_IN_VARIABLES` = `x y z tx_x tx_y tx_z rx_x rx_y rx_z d_tx d_rx freq lambda gain pt c` (filled in this order in `evaluate`, then the parameters). `describe()` = formula text + used parameter values, e.g. `d_tx + d_rx + bias [bias=25.0]` — used as the model version.
+- **`FormulaMeasurementModel(CustomFormula, double rangeNoiseStd, long seed)`** — BISTATIC_RANGE = formula (+ seeded noise), TIME_DELAY = that / 3e8, power and angles from a noiseless `BaselineMeasurementModel`. Descriptor `("Formula: <name>", describe() [+ " noise=…m seed=…"])`.
+- **`FormulaLocalizationModel(CustomFormula)`** — residual = formula(p) − measured BISTATIC_RANGE; `LeastSquaresSolver` with the numerical gradient; starting scale = max(sensor spread, |mean measured| / 2). Fewer than 3 values → UNDER_CONSTRAINED. Descriptor `("Formula: <name>", describe())`.
+- **`FormulaSet(List<FormulaParameter> parameters, List<FormulaDefinition> formulas, String measurementFormula)`** — record; blank `measurementFormula` → null (= built-in). `empty()`, `example()` (parameter `bias = 25`, formula `Range + bias` = `d_tx + d_rx + bias`, built-in measurements). `compile()` validates (parameter names are identifiers, not built-in variables/functions/`pi`, unique, finite values; formula names non-blank and unique; measurement formula exists). `measurementModel(noise, seed)`, `localizationModels()` (built-ins then formulas), `localizationModelNames()` (same order; formulas as `"Formula: " + name`), `localizationModel(displayName)`.
 
 ### `persistence/`
-- **`ScenarioPersistence`** — `saveScenario(Scenario, double duration, double timeStep, String filePath)` and `loadScenario(String)` using Java `Properties` keys: `transmitter.id/.position.x|y|z/.frequency/.power/.orientation.x|y|z`, `receiver.count`, `receiver.<i>.id/.position.x|y|z/.frequency/.gain/.azimuth/.elevation` (older files' `orientation.x|y` are read as azimuth/elevation), `trajectory.type` (only `ConstantVelocity`), `trajectory.initialPosition.x|y|z`, `trajectory.velocity.x|y|z`, `simulation.duration`, `simulation.timeStep`, `simulation.rangeNoiseStd`, `simulation.noiseSeed`. `saveScenario` has an overload with `(…, double rangeNoiseStd, long noiseSeed, String filePath)`. `loadSimulationParameters(path)` → `double[]{duration, timeStep, rangeNoiseStd, noiseSeed}` (noise 0, seed 0 for older files). `exportResultsToCSV(records, path)` — header `step,time,gt_x,gt_y,gt_z,est_x,est_y,est_z,error,status,meas_model,loc_model` (error −1 if NaN). `exportEvaluationSummary(evaluation, path)` — text summary.
+- **`ScenarioPersistence`** — `saveScenario(Scenario, double duration, double timeStep, String filePath)` and `loadScenario(String)` using Java `Properties` keys: `transmitter.id/.position.x|y|z/.frequency/.power/.orientation.x|y|z`, `receiver.count`, `receiver.<i>.id/.position.x|y|z/.frequency/.gain/.azimuth/.elevation` (older files' `orientation.x|y` are read as azimuth/elevation), `trajectory.type` (only `ConstantVelocity`), `trajectory.initialPosition.x|y|z`, `trajectory.velocity.x|y|z`, `simulation.duration`, `simulation.timeStep`, `simulation.rangeNoiseStd`, `simulation.noiseSeed`. `saveScenario` has an overload with `(…, double rangeNoiseStd, long noiseSeed, String filePath)`. `saveModelSettings(FormulaSet, String localizationModel, path)` adds `formula.parameter.count`, `formula.parameter.<i>.name/.value`, `formula.count`, `formula.<i>.name/.expression`, `formula.measurement`, `simulation.localizationModel` to an already saved file; `loadFormulas(path)` (no keys → `FormulaSet.empty()`), `loadLocalizationModelName(path)` (null if absent). CSV model fields go through `csvField()` (quoted if they contain a comma or quote). `loadSimulationParameters(path)` → `double[]{duration, timeStep, rangeNoiseStd, noiseSeed}` (noise 0, seed 0 for older files). `exportResultsToCSV(records, path)` — header `step,time,gt_x,gt_y,gt_z,est_x,est_y,est_z,error,status,meas_model,loc_model` (error −1 if NaN). `exportEvaluationSummary(evaluation, path)` — text summary.
 
 ### `ui/` (JavaFX)
-- **`SimulatorController`** — builds the window: left = `ScenarioEditor` + buttons (*Run experiment*, *Save scenario…*, *Load scenario…*, *Export results…*); centre = vertical `SplitPane` (`Visualization3D` top, `ResultsPanel` bottom); bottom = status label. Field `localizationModel`; the measurement model is built per run with `config.measurementModel()` (so noise settings apply and the seed restarts every run). `runExperiment()`: form → `ScenarioConfig.toScenario()` (errors shown red as "Invalid input: …") → validator (invalid → red "Cannot localize: …") → runner → evaluation → updates views and status line (model versions + geometry warnings). `static formatMetrics(EvaluationResult)` builds the "Steps: … | Mean error …" text (used by `ResultsPanel`). `loadScenario(File)`, `exportResults(File)`.
+- **`SimulatorController`** — builds the window: left = `ScenarioEditor` (with a "Custom formulas" `TitledPane` holding the `FormulaEditor` appended to it) + "Localize with" `ComboBox<String> modelChoice` + buttons (*Run experiment*, *Compare models*, *Save scenario…*, *Load scenario…*, *Export results…*); centre = vertical `SplitPane` (`Visualization3D` top, `TabPane` bottom with "Per-step results" = `ResultsPanel` and "Model comparison" = `ComparisonPanel`); bottom = status label. `prepare()` reads both forms (errors in red: "Invalid input: …" / "Invalid formula: …"), builds the measurement model with `formulas.measurementModel(noise, seed)` (seed restarts every run) and validates geometry (invalid → red "Cannot localize: …"). `runExperiment()` runs the model chosen in `modelChoice`; `compareModels()` runs `ModelComparison` over `formulas.localizationModels()` and shows the best model's run. `refreshModelChoices()` rebuilds the model list (also when it opens). `describe(ModelDescriptor)` gives "Name v1.0" or "Formula: name (formula text)". `static formatMetrics(EvaluationResult)` builds the "Steps: … | Mean error …" text (used by `ResultsPanel`). `loadScenario(File)`, `exportResults(File)`.
 - **`ScenarioEditor`** — the form. Text fields for TX position/frequency/power, one row per receiver (ID, X, Y, Z, gain, Az, El, `x` remove button) + *Add receiver*, drone start + velocity, duration + time step, range noise σ + random seed (`parseLong` for the seed). `getConfig()` parses fields (throws `IllegalArgumentException` naming the bad field); `setConfig(ScenarioConfig)` fills them.
 - **`ScenarioConfig`** — record `(Vector3D transmitterPosition, double frequencyHz, double transmitPowerW, List<ReceiverConfig> receivers, Vector3D initialPosition, Vector3D velocity, double duration, double timeStep, double rangeNoiseStd, long noiseSeed)` (an 8-argument constructor gives noise 0, seed 0); nested `ReceiverConfig(String id, double x, double y, double z, double gainDbi, double azimuthDeg, double elevationDeg)` (a 5-argument constructor gives 0°/0°). `measurementModel()` returns the `BaselineMeasurementModel` for the noise settings. `defaultConfig()` (GUI default: TX origin, 2.4 GHz, 1000 W; RX1 (5000,5000,0) az 225, RX2 (−5000,5000,0) az 315, RX3 (−5000,−5000,0) az 45, RX4 (5000,−5000,400) az 135, all el 5 (facing the centre); drone (−3000,−2000,300) at (60,40,5) m/s; 100 s, step 1 s; noise 0, seed 42). `toScenario()` validates (positive timing, step ≤ duration, non-blank unique IDs, finite numbers, elevation in [−90, 90], noise ≥ 0). `fromScenario(Scenario, duration, timeStep)` and `fromScenario(…, rangeNoiseStd, noiseSeed)`. Pure Java → unit-testable.
 - **`Visualization3D`** — 3D `SubScene`: ground grid, E/N/U axes (red/green/blue), TX (red), RX (blue + mast + yellow facing-direction arrow from `getBoresight()`), true trajectory line (green), estimate points (orange), selected-step drone + estimate + white error line. Mouse drag = orbit, scroll = zoom; slider + *Play* (whole run plays in ~10 s). Constants: `SCENE_SIZE = 1000`, `MAX_DRAWN_POINTS = 400`, colours `TX_COLOR`, `RX_COLOR`, `BORESIGHT_COLOR`, `TRUTH_COLOR`, `ESTIMATE_COLOR`, `GRID_COLOR`. Methods `showScenario`, `showExperiment(scenario, records)`, `showStep(index)`, `setStepListener`.
 - **`SceneTransform`** — world→scene mapping (Section 3), `fitting(points, sceneSize)` auto-centres/scales, `sampleIndices(count, max)` downsampling.
-- **`ResultsPanel`** — summary label + `TableView<ExperimentRecord>` with columns Step, t (s), True X/Y/Z, Est X/Y/Z, Error (m), Status (red if not SUCCESS), Residual (m), Cond. Columns are created in the constructor with `column("Title", r -> String)`. Row selection ↔ 3D step are linked.
+- **`FormulaEditor`** — parameter rows (name = value, `x`), formula rows (name, formula, `x`), *Add parameter* / *Add formula*, "Measurements from" `ComboBox` (`BUILT_IN_MEASUREMENT` or a formula name), help label listing variables and functions. `getFormulaSet()` (only parameter values are parsed here) / `setFormulaSet()`. Starts with `FormulaSet.example()`.
+- **`ComparisonPanel`** — `TableView<ModelComparison.Entry>`: Model, Version, Localized, Failed, Mean/Max/RMS error; lowest mean error in bold (`bestEntry`); selecting a row calls the listener (controller shows that run).
+- **`ResultsPanel`** — summary label (starts with the localization model name) + `TableView<ExperimentRecord>` with columns Step, t (s), True X/Y/Z, Est X/Y/Z, Error (m), Status (red if not SUCCESS), Residual (m), Cond. Columns are created in the constructor with `column("Title", r -> String)`. Row selection ↔ 3D step are linked.
 
 ### `util/`
 - **`Vector3D`** — **public mutable fields** `x, y, z`; methods return new vectors: `add, subtract, scale, dot, cross, distance, magnitude, normalize`; `equals` is exact (no `hashCode` override — don't use as a map key).
 - **`Matrix3`** — `solve(double[][] a, double[] b)` (3×3 Gaussian elimination, returns `null` if singular) and `symmetricEigenvalues(double[][] a)` (Jacobi, ascending order).
+- **`Expression`** — `parse(String text, List<String> variables)` → tree; `evaluate(double[] values)` (values in the order of `variables`); `uses(name)`; `text()`. Recursive-descent parser: `+ - * / ^` (right-assoc, `-x^2 = -(x^2)`), brackets, numbers like `3e8`, constant `pi`, `FUNCTIONS` (sqrt abs exp log log10 sin cos tan asin acos atan atan2 hypot pow min max). Errors: `IllegalArgumentException` "… at character N of "…"". Never executes code.
 
 ---
 
@@ -147,11 +168,16 @@ Style: `import org.junit.Test; import static org.junit.Assert.*;`, methods `@Tes
 | Test class | Checks |
 |---|---|
 | `localization/BaselineLocalizationModelTest` | noiseless estimate within 1e-3 m, mirror ambiguity (above-ground solution chosen), ground-level target has huge condition number, missing ranges → UNDER_CONSTRAINED, impossible range → INVALID_INPUT, reordered receivers, duplicate IDs |
+| `localization/ClosedFormLocalizationModelTest` | closed form within 1e-3 m, exactly 3 receivers, flat layout → UNDER_CONSTRAINED (baseline still SUCCESS), noisy estimates above ground, quadratic roots, registry keys |
+| `localization/LeastSquaresSolverTest` | numerical vs analytic gradient, numeric-gradient solve, above-ground and tie rules, NaN problem → NUMERICALLY_UNSTABLE |
+| `experiment/ModelComparisonTest` | one entry per model, identical noisy measurements for every model, same result as a single run |
+| `formula/FormulaModelTest` | variable values, `d_tx + d_rx` and one-way `d_rx` localize exactly, 25 m bias case (formula 0 m, baseline > 5 m), noise + descriptor, invalid formulas/parameters rejected with the name |
+| `util/ExpressionTest` | precedence, functions, `uses`, error messages |
 | `localization/GeometryValidatorTest` | valid / too few / collinear / coplanar warning / too close / duplicate IDs / order & scale independence |
 | `experiment/RegressionTest` | full runs (3/4/5 receivers, wide baseline, close range, elevated TX) within `NOISELESS_TOLERANCE_M = 1e-3`; asserts descriptor versions `"1.1"` (measurement) and `"2.1"` (localization); noisy default scenario (σ = 5 and 20 m) must never flip to the mirror below ground |
 | `experiment/ExperimentRunnerTest` | records in order, ground truth, time stamps, fractional steps (0.3 s / 0.1 s → 4 records) |
 | `experiment/EvaluationModuleTest` | mean/max/RMS by hand, failed steps excluded |
-| `persistence/ScenarioPersistenceTest` | save→load round trip, same results after reload, CSV/summary files written (non-empty) |
+| `persistence/ScenarioPersistenceTest` | save→load round trip, same results after reload, formulas + chosen model round trip, old files → no formulas, CSV quoting, CSV/summary files written (non-empty) |
 | `ui/ScenarioConfigTest`, `ui/SceneTransformTest` | form→scenario mapping and validation; world→scene mapping, downsampling, grid step |
 
 **If you change a version string or a default, these tests will tell you** — update the test only if the new behaviour is intended.
@@ -172,6 +198,10 @@ Style: `import org.junit.Test; import static org.junit.Assert.*;`, methods `@Tes
 - Fewer than 3 range measurements → `UNDER_CONSTRAINED`; a range shorter than the TX–RX distance (physically impossible) → `INVALID_INPUT`; duplicate receiver IDs → `INVALID_INPUT`.
 - Why the old method failed: it guessed from received power, forced z = 500 m, and used finite-difference gradient descent → 80–115 m error even without noise.
 
+**Second formulation (ClosedFormLocalizationModel v1.0).** Put the TX at the origin: `q = p − t`, `R = |q|`, `s_i = r_i − t`. Squaring `|q − s_i| = m_i − R` gives `s_i · q = (|s_i|² − m_i²)/2 + m_i R` — linear in q if R is known. Stack all receivers: `A q = c + m R`; normal equations give `q = a + b R`. Put that into `|q|² = R²`: `(b·b − 1) R² + 2 (a·b) R + a·a = 0`. Each root R ≥ 0 gives a candidate; the same above-ground rule picks one. No iteration and no starting points, but: (1) receivers must not lie in one plane through the TX (else `AᵀA` is singular → UNDER_CONSTRAINED; that is why it fails on the flat CLI layouts); (2) with > 3 receivers the linear least squares is not the optimal fit, so noise hurts more (default layout, σ = 5 m: mean 22.5 m vs 11.7 m for the baseline).
+
+**User formulas.** A formula f(p, receiver) says what each receiver measures. Measurements: `m_i = f(p_true, rx_i)` (+ noise). Localization: minimise `Σ (f(p, rx_i) − m_i)²` with the same LM solver; the gradient is computed numerically (central difference, 1e-3 m). If the formula used to localize differs from the one that made the data, the comparison shows the cost of the wrong model (25 m bias: baseline 60.6 m mean error, matching formula 0.0 m).
+
 **Geometry check.** Put TX and all RX positions into a covariance matrix; its 3 eigenvalues say how spread out the sensors are in each direction. Middle eigenvalue ≈ 0 → all on a line (can't localize). Smallest ≈ 0 → all in a plane (works, but mirror ambiguity → warning).
 
 **Error metrics** (successful steps only): mean = Σe/n, max = max e, RMS = sqrt(Σe²/n). RMS ≥ mean always.
@@ -189,13 +219,15 @@ Style: `import org.junit.Test; import static org.junit.Assert.*;`, methods `@Tes
 5. **Records are immutable.** Adding a field to a record means updating **every** constructor call:
    - `EvaluationResult`: `EvaluationModule` (2 places) + `persistence/ScenarioPersistenceTest`
    - `ExperimentRecord`: `ExperimentRunner` + `experiment/EvaluationModuleTest`
-   - `EstimationResult`: `ExperimentRunner`, `BaselineLocalizationModel` (`failure()` + end of `estimate`) + `EvaluationModuleTest`
-   - `Measurement`: `ExperimentRunner`, `BaselineMeasurementModel`, `EvaluationModuleTest`, `BaselineLocalizationModelTest`
-   - `ReceiverMeasurement`: `BaselineMeasurementModel`, `BaselineLocalizationModelTest`
+   - `EstimationResult`: `ExperimentRunner`, `LeastSquaresSolver` (`failure()` + `result()`) + `EvaluationModuleTest`
+   - `Measurement`: `ExperimentRunner`, `BaselineMeasurementModel`, `FormulaMeasurementModel`, `EvaluationModuleTest`, `BaselineLocalizationModelTest`
+   - `ReceiverMeasurement`: `BaselineMeasurementModel`, `FormulaMeasurementModel`, `BaselineLocalizationModelTest`
+   - `FormulaSet`: `FormulaSet.empty()/example()`, `FormulaEditor.getFormulaSet()`, `ScenarioPersistence.loadFormulas()`, `FormulaModelTest`, `ScenarioPersistenceTest`
    - `ScenarioConfig`: `ScenarioConfig.defaultConfig()`, `ScenarioConfig.fromScenario()`, `ScenarioEditor.getConfig()`, `ScenarioConfigTest` (4 places)
 6. **Display ≠ maths:** visual fixes stay in `ui/`.
 7. **GUI and CLI share the pipeline:** put logic in model classes, not in `SimulatorController` or `CLISimulatorApp`.
-8. `SPEED_OF_LIGHT = 3e8` is defined in **two** places (`BaselineMeasurementModel`, `RadarPhysics`) — change both if needed.
+8. `SPEED_OF_LIGHT = 3e8` is defined in **three** places (`BaselineMeasurementModel`, `RadarPhysics`, `CustomFormula`) — change all if needed.
+9. **Formulas are only evaluated by `util/Expression`**; never use a script engine or `eval` for user text.
 
 ---
 
@@ -261,17 +293,23 @@ Add a test in `GeometryValidatorTest`. The GUI and CLI show the message automati
 ### 9.8 Change a threshold / default
 | What | Where |
 |---|---|
-| "Unstable" condition-number limit (1e8) | `BaselineLocalizationModel.MAX_CONDITION_NUMBER` |
-| LM iterations (200), start points | `BaselineLocalizationModel.MAX_ITERATIONS`, `START_DIRECTIONS` |
+| "Unstable" condition-number limit (1e8) | `LeastSquaresSolver.MAX_CONDITION_NUMBER` |
+| LM iterations (200), start points | `LeastSquaresSolver.MAX_ITERATIONS`, `START_DIRECTIONS` |
+| Numerical gradient step (1e-3 m) | `LeastSquaresSolver.GRADIENT_STEP` |
+| Example formula in the GUI | `FormulaSet.example()` |
 | Min receivers (3), min spacing (1 m), flatness (1e-6) | `GeometryValidator` constants |
 | GUI default scenario | `ScenarioConfig.defaultConfig()` |
 | CLI defaults / built-in layout | `CLISimulatorApp.main` variables, `buildDefaultScenario` |
 | Test tolerance (1 mm) | `RegressionTest.NOISELESS_TOLERANCE_M` |
 
 ### 9.9 Add a new localization (or measurement) model and use it
-1. New class implementing `LocalizationModel` with its own `getDescriptor()` name/version.
-2. GUI: change the `localizationModel` field initialiser in `SimulatorController`. CLI: change `LocalizationModel locModel = new BaselineLocalizationModel();` in `CLISimulatorApp`.
-3. The status line, CSV and records then show the new name/version automatically.
+**Quickest, no code:** in the GUI, *Custom formulas* → add parameters and a formula → choose it under *Localize with*, or click *Compare models* (see 9.12).
+
+**As Java code (built-in model):**
+1. New class implementing `LocalizationModel` with its own `getDescriptor()` name/version. For least squares, implement `LeastSquaresSolver.Problem` (residual, optionally gradient) and call `LeastSquaresSolver.solve(LeastSquaresSolver.startingPoints(centre, scale), problem)`.
+2. Add one line to `LocalizationModels.BUILT_IN` (key → constructor). It then appears in the GUI list, `--model <key>` and every comparison.
+3. Update `ClosedFormLocalizationModelTest.testRegistryListsBothModels` and `ModelComparisonTest` (they count the models), and `FormulaModelTest.testModelNamesMatchModels` / `testFormulaThatModelsTheDataBeatsTheBuiltInModels` (index of the formula entry).
+4. A new measurement model: implement `MeasurementModel`, and return it from `FormulaSet.measurementModel` (or `ScenarioConfig.measurementModel`) where appropriate.
 
 ### 9.10 Add a field to the GUI form (e.g. drone RCS)
 1. `ScenarioConfig`: add the record component; update `defaultConfig()`, `fromScenario()`, and validate it in `toScenario()`.
@@ -282,14 +320,22 @@ Add a test in `GeometryValidatorTest`. The GUI and CLI show the message automati
 ### 9.11 Change how the 3D view looks
 `ui/Visualization3D.java`: colours = the `*_COLOR` constants; sensor size `0.012 * SCENE_SIZE`, estimate points `0.004 * SCENE_SIZE`, trajectory line radius `1.5` (in `showExperiment`); playback length `records.size() / 10.0` (≈10 s) in `startPlayback`; max drawn points `MAX_DRAWN_POINTS`. Initial camera angle: `yaw` / `pitch` `Rotate` fields (−30°).
 
-### 9.12 Use the angle measurements
+### 9.12 Use custom formulas (what to tell the stakeholder)
+1. *Parameters*: *Add parameter*, type a name (letters, digits, `_`) and a value.
+2. *Formulas*: *Add formula*, give it a name and type what each receiver measures, e.g. `d_tx + d_rx + bias`, `d_rx` (one-way range), `sqrt((x-rx_x)^2 + (y-rx_y)^2 + (z-rx_z)^2) + d_tx`.
+3. *Measurements from*: built-in bistatic range, or one of the formulas (then the data are generated with it).
+4. *Localize with* + *Run experiment*, or *Compare models* for all models side by side.
+5. *Save scenario…* keeps the formulas, parameters and chosen model.
+Limits: formulas describe BISTATIC_RANGE only (not power or angles); parameters are fixed, not estimated; to add a variable see `CustomFormula.BUILT_IN_VARIABLES`, to add a function `Expression.FUNCTIONS` + `Parser.function`.
+
+### 9.13 Use the angle measurements
 AZIMUTH/ELEVATION are already generated per receiver (`BaselineMeasurementModel.anglesInReceiverFrame`), in the receiver's antenna frame. To show them, read `rm.values().get(Quantity.AZIMUTH)` from `record.measurement().perReceiver()` — e.g. a `ResultsPanel` column for one receiver ID. A new localization model could combine them with ranges; convert back to a world direction by applying the receiver's azimuth/elevation rotation in reverse.
 
 ---
 
 ## 10. Known gaps (be honest about these)
 
-Received power is a placeholder formula (ignores gains/RCS); only range noise (no angle noise); the localizer uses ranges only (angles are generated but unused); only one formulation per model, and no side-by-side comparison yet; full experiment reload not implemented (scenario only, CSV export); only constant-velocity trajectory in GUI/persistence; GUI runs the experiment on the UI thread (~1 ms/step); no packaging (fat JAR/jpackage); stakeholder formulation and MATLAB reference cases not received yet. Details: `docs/MID-DEMO.md`.
+Received power is a placeholder formula (ignores gains/RCS); only range noise (no angle noise); the localizers use ranges only (angles are generated but unused); user formulas can describe only the measured range and cannot estimate their parameters; the stakeholder's own formulation still has to be entered and checked with him; full experiment reload not implemented (scenario only, CSV export); only constant-velocity trajectory in GUI/persistence; GUI runs the experiment on the UI thread (~1 ms/step); no packaging (fat JAR/jpackage); stakeholder formulation and MATLAB reference cases not received yet. Details: `docs/MID-DEMO.md`.
 
 ---
 
@@ -304,4 +350,7 @@ Received power is a placeholder formula (ignores gains/RCS); only range noise (n
 - **Why match by receiver ID?** So reordering the receiver list can never attach a measurement to the wrong receiver.
 - **Why 0 m error by default?** Default noise is 0, so it checks correctness. With noise on (e.g. σ = 5 m) you get realistic errors (~11 m mean on the default layout).
 - **How is noise made reproducible?** The random generator is seeded; the same seed gives exactly the same noisy run, and the seed is recorded in the model version and saved in the scenario file.
-- **How are formulations swapped?** Implement `MeasurementModel` / `LocalizationModel`, give a new name/version, change one line in the controller/CLI.
+- **How are formulations swapped?** Without code: type the formula in the GUI's *Custom formulas* section. In code: implement `LocalizationModel` (or `MeasurementModel`), give it a name/version, add one line to `LocalizationModels`.
+- **How is the comparison fair?** `ModelComparison` generates the measurements once and replays them to every model, so all models see exactly the same (noisy) data.
+- **Why is the closed form worse with noise?** It linearises the equations and solves them in one step; with more receivers than unknowns that linear least squares is not the best fit to the real ranges, and the default layout's weak vertical geometry amplifies the difference (22.5 m vs 11.7 m mean at σ = 5 m).
+- **Is typing a formula safe?** Yes: our own parser (`util/Expression`) only does arithmetic and a fixed list of maths functions; no Java or script code is ever run.

@@ -23,6 +23,8 @@
 ## Known gaps (honest list)
 
 > **Update, 26 Oct 2026 (after the mid-evaluation):** gap 2 (noise) and gap 4 (receiver orientation) are now closed: seeded range noise is settable in the GUI and CLI, and receivers have azimuth/elevation that is shown in 3D and affects the generated angle measurements. Adding noise also exposed and fixed a mirror-solution bug (see `docs/WEEKLY-LOG.md`, Week 8). The table below is kept as it was presented at the mid-evaluation.
+>
+> **Update, 3 Nov 2026:** gap 5 is closed: a second built-in formulation (closed-form localization) and side-by-side comparison on identical measurements, in the GUI and CLI. Gap 1 is reduced: the stakeholder can now type his own formula and parameters in the GUI, with no code change, and compare it with the built-in models. His actual formulation still has to be entered and checked with him.
 
 | # | Gap | Impact | Plan |
 |---|---|---|---|

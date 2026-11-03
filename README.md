@@ -28,7 +28,23 @@ cd MultiStaticRadarSimulator
 1. **Configure** the transmitter, the receivers (use *Add receiver* and the `x` buttons; at least 3), each receiver's facing direction (**Az** in degrees anticlockwise from East, **El** in degrees above horizontal), the drone start position and velocity, the duration and time step, and optional **range noise σ** with a **random seed** (0 = noiseless; the same seed always reproduces the same run).
 2. Click **Run experiment**. The geometry is validated first: invalid layouts (too few receivers, collinear sensors, duplicate IDs) are refused with a red message, and coplanar layouts run with a warning.
 3. **Inspect** the 3D view (yellow arrows show where each receiver points): drag to orbit, scroll to zoom, and use the slider or *Play* to step through time. The results table lists every step; selecting a row moves the 3D view to that step.
-4. **Save scenario… / Load scenario…** store and restore the configuration (`.properties`). **Export results…** writes a per-step CSV and an evaluation summary.
+4. **Try your own formula without changing code** (section *Custom formulas*): add parameters such as `bias = 25`, type a formula for what each receiver measures, such as `d_tx + d_rx + bias`, and optionally choose it under *Measurements from* so it generates the data. Every formula appears under **Localize with** and is solved for the drone position by the same least-squares solver.
+5. **Compare models** runs every model (the two built-in ones and every formula) on exactly the same measurements. The *Model comparison* tab lists localized/failed steps and mean/max/RMS error per model; select a row to see that model's run in 3D.
+6. **Save scenario… / Load scenario…** store and restore the configuration, formulas and chosen model (`.properties`). **Export results…** writes a per-step CSV and an evaluation summary of the run on screen.
+
+![Model comparison: measurements with a 25 m range bias; only the formula that models the bias fits exactly](docs/images/model-comparison.png)
+
+### Formula variables
+
+| Variable | Meaning |
+|---|---|
+| `x`, `y`, `z` | Target position (m) |
+| `tx_x`, `tx_y`, `tx_z` / `rx_x`, `rx_y`, `rx_z` | Transmitter / this receiver's position (m) |
+| `d_tx`, `d_rx` | Distance from the target to the transmitter / to this receiver (m) |
+| `freq`, `lambda`, `gain`, `pt`, `c` | Carrier frequency (Hz), wavelength (m), receiver gain (dBi), transmit power (W), speed of light |
+| your parameters | Any name you add in the parameter list |
+
+Operators `+ - * / ^` and brackets; functions `sqrt abs exp log log10 sin cos tan asin acos atan atan2 hypot pow min max`; constant `pi`. Formulas are parsed by the simulator itself (no code is executed), and a mistake is reported with the formula's name and the character position. Parameters are fixed values: only the position is estimated. A formula describes the measured range (`BISTATIC_RANGE`); formulas for power or angles are not supported yet.
 
 The window opens with a 4-receiver default scenario already evaluated.
 
@@ -39,6 +55,7 @@ The window opens with a 4-receiver default scenario already evaluated.
 ./gradlew runCli --args="--save scenario.properties"
 ./gradlew runCli --args="--load scenario.properties --export results.csv"
 ./gradlew runCli --args="--receivers 4 --noise 5 --seed 42"
+./gradlew runCli --args="--receivers 5 --noise 5 --compare"
 ```
 
 | Option | Meaning |
@@ -48,6 +65,10 @@ The window opens with a 4-receiver default scenario already evaluated.
 | `--save FILE` / `--load FILE` | Save or load the scenario configuration |
 | `--export FILE.csv` | Write per-step results and `FILE_summary.txt` |
 | `--noise M`, `--seed N` | Gaussian range noise with standard deviation M metres, seeded with N (default: noiseless, seed 42); override values from `--load` |
+| `--model NAME` | Localization model: `baseline` (default), `closed-form`, or a formula saved in the `--load` file (e.g. `"Formula: Range + bias"`) |
+| `--compare` | Run every model on the same measurements and print their errors side by side |
+
+A file saved from the GUI also carries its formulas: the CLI uses a measurement formula if one was chosen, and the saved localization model unless `--model` is given.
 
 ## Coordinate convention
 
@@ -62,12 +83,13 @@ Each design doc module is one package under `src/main/java/com/radar/simulator/`
 | Scenario model | `scenario`, `core` | `Scenario`, `Transmitter`, `Receiver` | Sensor positions and parameters, target trajectory |
 | Trajectory engine | `scenario` | `TrajectoryModel`, `ConstantVelocityTrajectory` | Target position and velocity at time *t* |
 | Measurement model | `measurement` | `MeasurementModel`, `BaselineMeasurementModel` | Per-receiver bistatic range, time delay, received power |
-| Localization model | `localization` | `LocalizationModel`, `BaselineLocalizationModel` | Position estimate with status, residual and condition number |
+| Localization model | `localization` | `LocalizationModel`, `BaselineLocalizationModel`, `ClosedFormLocalizationModel`, `LeastSquaresSolver` | Position estimate with status, residual and condition number |
+| User formulas | `formula` | `FormulaSet`, `CustomFormula`, `FormulaMeasurementModel`, `FormulaLocalizationModel` | Formulations defined in the GUI as text, run through the same pipeline |
 | Geometry validation | `localization` | `GeometryValidator` | Rejects under-constrained layouts; warns about mirror ambiguity |
-| Experiment runner | `experiment` | `ExperimentRunner`, `ExperimentRecord` | Runs every time step and records truth, measurement, estimate, model versions and error |
+| Experiment runner | `experiment` | `ExperimentRunner`, `ExperimentRecord`, `ModelComparison` | Runs every time step and records truth, measurement, estimate, model versions and error; runs several models on the same measurements |
 | Evaluation | `experiment` | `EvaluationModule`, `EvaluationResult` | Mean, max and RMS error; successful vs failed steps |
 | Persistence | `persistence` | `ScenarioPersistence` | Scenario save/load, CSV and summary export |
-| UI / visualization | `ui` | `SimulatorController`, `ScenarioEditor`, `Visualization3D`, `ResultsPanel` | Form, 3D view, results table |
+| UI / visualization | `ui` | `SimulatorController`, `ScenarioEditor`, `FormulaEditor`, `Visualization3D`, `ResultsPanel`, `ComparisonPanel` | Forms, 3D view, results and comparison tables |
 
 [docs/PROJECT-STRUCTURE.md](docs/PROJECT-STRUCTURE.md) explains every folder and file.
 
@@ -81,11 +103,15 @@ Until the stakeholder's formulation is available, the baseline uses bistatic ran
 
 (an ellipsoid with foci at the transmitter *t* and the receiver *rᵢ*). The position *p* is the least-squares solution found by Levenberg–Marquardt with the analytic Jacobian, started from several points; the target is constrained to be at or above the ground, which resolves the mirror solution of a (nearly) flat sensor layout. The result reports the RMS range residual and the Jacobian condition number.
 
+### Second formulation: closed form (localization v1.0)
+
+`ClosedFormLocalizationModel` solves the same equations without iteration. With the transmitter as origin and R = ‖p − t‖, squaring each equation makes it linear in p, so p = a + bR (least squares over all receivers), and R follows from a quadratic. It needs receivers that are not in one plane through the transmitter (otherwise `UNDER_CONSTRAINED`), and because the linearised fit is not optimal it amplifies noise more: on the default layout with σ = 5 m (seed 42) the mean error is 22.5 m against 11.7 m for the baseline.
+
 The measurement model also produces each receiver's **azimuth/elevation** of the target in that receiver's own antenna frame (so orientation matters), and can add **seeded Gaussian noise** to the ranges.
 
 ## Verification
 
-`./gradlew test` runs 131 JUnit tests covering every module in the design doc test plan:
+`./gradlew test` runs 160 JUnit tests covering every module in the design doc test plan:
 
 - **Hand-computable unit cases:** vectors, 3×3 linear algebra, trajectories, measurements and error metrics.
 - **Noiseless reference scenarios:** 3, 4 and 5 receivers, wide baseline, close range and an elevated transmitter. Each must reproduce ground truth within **1 mm**.
@@ -93,12 +119,13 @@ The measurement model also produces each receiver's **azimuth/elevation** of the
 - **Ordering and timing:** receiver reordering, measurement time stamps, and fractional time steps.
 - **Orientation:** boresight directions and receiver-frame angles for hand-checkable geometries.
 - **Noise:** seeded runs are reproducible, the noise spread matches σ, and noisy estimates never flip to the mirror solution below ground.
+- **Formulations and comparison:** the closed-form model matches ground truth within 1 mm; every compared model sees identical measurements; user formulas evaluate their variables correctly, localize exactly when they match the data, and are rejected with a readable message when invalid; the formula parser is checked on hand-computable expressions.
 - **Persistence round trip and CSV export.**
 - **GUI logic without a display:** form-to-scenario mapping and the world-to-scene transform.
 
 ## Status
 
-The full workflow above works end to end. Since the mid-evaluation, receiver orientation, receiver-frame angles and seeded measurement noise have been added. [docs/MID-DEMO.md](docs/MID-DEMO.md) has the mid-evaluation demo script and gap list (with which gaps are now closed), and [docs/WEEKLY-LOG.md](docs/WEEKLY-LOG.md) the change history.
+The full workflow above works end to end. Since the mid-evaluation, receiver orientation, receiver-frame angles, seeded measurement noise, a second localization formulation, side-by-side model comparison and formulas defined in the GUI have been added. [docs/MID-DEMO.md](docs/MID-DEMO.md) has the mid-evaluation demo script and gap list (with which gaps are now closed), and [docs/WEEKLY-LOG.md](docs/WEEKLY-LOG.md) the change history.
 
 ## Contact
 
