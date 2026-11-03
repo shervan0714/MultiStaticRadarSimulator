@@ -4,9 +4,10 @@ import com.radar.simulator.experiment.EvaluationModule;
 import com.radar.simulator.experiment.EvaluationResult;
 import com.radar.simulator.experiment.ExperimentRecord;
 import com.radar.simulator.experiment.ExperimentRunner;
-import com.radar.simulator.localization.BaselineLocalizationModel;
 import com.radar.simulator.localization.GeometryValidator;
 import com.radar.simulator.localization.LocalizationModel;
+import com.radar.simulator.localization.LocalizationModels;
+import com.radar.simulator.experiment.ModelComparison;
 import com.radar.simulator.measurement.BaselineMeasurementModel;
 import com.radar.simulator.measurement.MeasurementModel;
 import com.radar.simulator.persistence.ScenarioPersistence;
@@ -36,6 +37,9 @@ import java.util.List;
  *   --receivers &lt;n&gt;  Number of receivers: 3, 4, or 5 (default: 3)
  *   --noise &lt;m&gt;      Range noise standard deviation in metres (default: 0, noiseless)
  *   --seed &lt;n&gt;       Random seed for the noise (default: 42)
+ *   --model &lt;key&gt;    Localization model: baseline (default) or closed-form
+ *   --compare        Run every localization model on the same measurements
+ *                    and print their errors side by side
  *
  * When --load is used, --noise and --seed given on the command line override
  * the values stored in the file.
@@ -58,6 +62,8 @@ public class CLISimulatorApp {
         int receiverCount = 3;
         Double noiseArg = null;
         Long seedArg = null;
+        String modelKey = "baseline";
+        boolean compare = false;
 
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
@@ -69,6 +75,8 @@ public class CLISimulatorApp {
                 case "--receivers": receiverCount = Integer.parseInt(args[++i]); break;
                 case "--noise":    noiseArg = Double.parseDouble(args[++i]); break;
                 case "--seed":     seedArg = Long.parseLong(args[++i]); break;
+                case "--model":    modelKey = args[++i]; break;
+                case "--compare":  compare = true; break;
             }
         }
 
@@ -134,7 +142,19 @@ public class CLISimulatorApp {
             System.err.println("[ERROR] " + e.getMessage());
             return;
         }
-        LocalizationModel locModel = new BaselineLocalizationModel();
+        if (compare) {
+            printComparison(ModelComparison.compare(scenario, measModel,
+                LocalizationModels.builtIns(), duration, timeStep));
+            return;
+        }
+
+        LocalizationModel locModel;
+        try {
+            locModel = LocalizationModels.byKey(modelKey);
+        } catch (IllegalArgumentException e) {
+            System.err.println("[ERROR] " + e.getMessage());
+            return;
+        }
         ExperimentRunner runner = new ExperimentRunner(scenario, measModel, locModel);
 
         System.out.println("[RUN] Starting simulation...");
@@ -198,6 +218,26 @@ public class CLISimulatorApp {
         System.out.println("==============================================");
         System.out.println(" Simulation Complete                          ");
         System.out.println("==============================================");
+    }
+
+    /**
+     * Print one row of metrics per localization model.
+     */
+    private static void printComparison(List<ModelComparison.Entry> entries) {
+        System.out.println("=== Model Comparison (same measurements for every model) ===");
+        System.out.printf("%-26s %-8s %-9s %-7s %-12s %-12s %-12s%n",
+            "Model", "Version", "Localized", "Failed", "Mean (m)", "Max (m)", "RMS (m)");
+        System.out.println("-".repeat(92));
+        for (ModelComparison.Entry entry : entries) {
+            EvaluationResult e = entry.evaluation();
+            boolean any = e.successfulSteps() > 0;
+            System.out.printf("%-26s %-8s %-9d %-7d %-12s %-12s %-12s%n",
+                entry.localizationModel().name(), entry.localizationModel().version(),
+                e.successfulSteps(), e.failedSteps(),
+                any ? String.format("%.4f", e.meanError()) : "-",
+                any ? String.format("%.4f", e.maxError()) : "-",
+                any ? String.format("%.4f", e.rmsError()) : "-");
+        }
     }
 
     /**
