@@ -23,6 +23,24 @@ cd MultiStaticRadarSimulator
 ./gradlew runCli     # same pipeline from the command line, no GUI
 ```
 
+## Running without building (for users)
+
+Two ready-made packages are built from the source. Neither needs Gradle or the source code:
+
+| Package | Needs | How to run |
+|---|---|---|
+| `MultiStaticRadarSimulator-windows.zip` (~56 MB) | Windows 10/11 only; **no Java install** (Java is bundled) | Unzip, open the `MultiStaticRadarSimulator` folder, double-click `MultiStaticRadarSimulator.exe` |
+| `MultiStaticRadarSimulator.jar` (~11 MB) | Java 17 or newer, on Windows, Linux or macOS (Apple Silicon) | Double-click, or `java -jar MultiStaticRadarSimulator.jar` |
+
+The JAR also runs the command-line pipeline: `java -jar MultiStaticRadarSimulator.jar --cli --receivers 5 --noise 5 --compare` (all options below). On startup Java prints a few `WARNING` lines about JavaFX and native access; they are harmless.
+
+To build the packages yourself:
+
+```bash
+./gradlew fatJar        # build/dist/MultiStaticRadarSimulator.jar
+./gradlew jpackageZip   # build/dist/MultiStaticRadarSimulator-windows.zip (run on Windows, JDK 17+ with jpackage)
+```
+
 ## Using the GUI
 
 1. **Configure** the transmitter, the receivers (use *Add receiver* and the `x` buttons; at least 3), each receiver's facing direction (**Az** in degrees anticlockwise from East, **El** in degrees above horizontal), the drone start position and velocity, the duration and time step, and optional **range noise σ** with a **random seed** (0 = noiseless; the same seed always reproduces the same run).

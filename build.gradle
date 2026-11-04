@@ -57,3 +57,74 @@ tasks.named('jar') {
         )
     }
 }
+
+// ----- Packaging -----
+// fatJar: one runnable JAR (java -jar) with all dependencies, including
+// JavaFX for Windows, Linux and Apple-Silicon macOS. Needs Java 17+.
+// jpackageImage: a Windows app folder with Java bundled (no install needed).
+
+def javafxPlatforms = ['win', 'linux', 'mac-aarch64']
+def javafxModules = ['base', 'graphics', 'controls', 'fxml']
+
+// One configuration per platform: Gradle cannot resolve several platform
+// variants of the same JavaFX module in a single configuration.
+def javafxConfigs = javafxPlatforms.collect { platform ->
+    def config = configurations.create("javafx_${platform.replace('-', '_')}") {
+        transitive = false
+    }
+    javafxModules.each { module ->
+        dependencies.add(config.name, "org.openjfx:javafx-${module}:21.0.1:${platform}@jar")
+    }
+    config
+}
+
+tasks.register('fatJar', Jar) {
+    group = 'distribution'
+    description = 'Builds build/dist/MultiStaticRadarSimulator.jar, runnable with java -jar.'
+    archiveFileName = 'MultiStaticRadarSimulator.jar'
+    destinationDirectory = layout.buildDirectory.dir('dist')
+    manifest {
+        attributes('Main-Class': 'com.radar.simulator.Launcher')
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from sourceSets.main.output
+    dependsOn configurations.runtimeClasspath, javafxConfigs
+    from {
+        (configurations.runtimeClasspath.files + javafxConfigs.collectMany { it.files })
+            .findAll { it.name.endsWith('.jar') }
+            .collect { zipTree(it) }
+    }
+    exclude 'module-info.class', 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA',
+            'META-INF/versions/*/module-info.class'
+}
+
+tasks.register('jpackageImage', Exec) {
+    group = 'distribution'
+    description = 'Builds build/jpackage/MultiStaticRadarSimulator/ (Windows app with bundled Java).'
+    dependsOn 'fatJar'
+    def input = layout.buildDirectory.dir('dist').get().asFile
+    def dest = layout.buildDirectory.dir('jpackage').get().asFile
+    def jpackage = new File(System.getProperty('java.home'), 'bin/jpackage').path
+    doFirst {
+        delete dest
+    }
+    commandLine jpackage,
+        '--type', 'app-image',
+        '--name', 'MultiStaticRadarSimulator',
+        '--app-version', project.version,
+        '--vendor', 'E. Sai Shervan (IIT Madras)',
+        '--input', input.path,
+        '--main-jar', 'MultiStaticRadarSimulator.jar',
+        '--main-class', 'com.radar.simulator.Launcher',
+        '--java-options', '--enable-native-access=ALL-UNNAMED',
+        '--dest', dest.path
+}
+
+tasks.register('jpackageZip', Zip) {
+    group = 'distribution'
+    description = 'Zips the Windows app folder to build/dist/MultiStaticRadarSimulator-windows.zip.'
+    dependsOn 'jpackageImage'
+    archiveFileName = 'MultiStaticRadarSimulator-windows.zip'
+    destinationDirectory = layout.buildDirectory.dir('dist')
+    from layout.buildDirectory.dir('jpackage')
+}

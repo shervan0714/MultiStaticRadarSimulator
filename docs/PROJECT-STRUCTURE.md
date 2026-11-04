@@ -15,7 +15,7 @@ All Java sources live under `com.radar.simulator`; the paths below are relative 
 ```
 MultiStaticRadarSimulator/
 ├── README.md              Overview, build/run steps, architecture, verification, contact
-├── build.gradle           Build: Java 17, JavaFX 21, JUnit 4; `run` (GUI) and `runCli` tasks
+├── build.gradle           Build: Java 17, JavaFX 21, JUnit 4; `run` (GUI), `runCli`, `fatJar` and `jpackageZip` (packaging) tasks
 ├── gradlew, gradlew.bat   Gradle wrapper scripts (Unix / Windows), so no Gradle install is needed
 ├── gradle/wrapper/        Wrapper jar + properties pinning Gradle 9.3.0
 ├── .gitignore             Keeps build output, IDE files, logs and exported CSVs out of git
@@ -26,7 +26,7 @@ MultiStaticRadarSimulator/
     └── test/java/...      JUnit tests, same package layout as main
 ```
 
-Generated and not in git: `build/` (compiled classes, test reports — recreated by every build) and `.gradle/` (Gradle's local cache).
+Generated and not in git: `build/` (compiled classes, test reports, and the packages in `build/dist/` — recreated by every build) and `.gradle/` (Gradle's local cache).
 
 ## `docs/`
 
@@ -46,6 +46,7 @@ Generated and not in git: `build/` (compiled classes, test reports — recreated
 
 | File | Purpose |
 |---|---|
+| `Launcher.java` | Entry point of the packaged JAR/app: opens the GUI, or runs the CLI when the first argument is `--cli` (needed because a JAR with JavaFX on the class path cannot start an `Application` subclass directly). |
 | `RadarSimulatorApp.java` | JavaFX entry point (`./gradlew run`). Opens the window and runs the default scenario. |
 | `CLISimulatorApp.java` | Command-line entry point (`./gradlew runCli`). Same pipeline without a GUI; options `--receivers`, `--duration`, `--timestep`, `--save`, `--load`, `--export`, `--noise`, `--seed`, `--model`, `--compare`. |
 
