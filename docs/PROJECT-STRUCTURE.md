@@ -34,7 +34,10 @@ Generated and not in git: `build/` (compiled classes, test reports, and the pack
 |---|---|
 | `PROJECT-STRUCTURE.md` | This file |
 | `MID-DEMO.md` | Mid-evaluation demo script and the honest list of known gaps |
+| `FINAL-DEMO.md` | Final demo: handoff package, stakeholder-executed demo script, verification evidence per module, requirement status, known gaps |
 | `WEEKLY-LOG.md` | Weekly contribution log required by the course; also records what changed and why |
+| `architecture/system-architecture.*` | System architecture and data-flow chart (HTML/SVG source, PNG, PDF), updated for the final version |
+| `mid-eval/principles-and-practices.*` | Mid-evaluation Principles & Practices document (HTML source and PDF) |
 | `images/default-run.png` | Screenshot: default 4-receiver run (used in the README) |
 | `images/coplanar-warning.png` | Screenshot: all sensors at ground level — runs, with the mirror-ambiguity warning |
 | `images/invalid-geometry.png` | Screenshot: two receivers — refused with `UNDER_CONSTRAINED` |

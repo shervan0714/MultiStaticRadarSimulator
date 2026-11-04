@@ -143,7 +143,7 @@ The measurement model also produces each receiver's **azimuth/elevation** of the
 
 ## Status
 
-The full workflow above works end to end. Since the mid-evaluation, receiver orientation, receiver-frame angles, seeded measurement noise, a second localization formulation, side-by-side model comparison and formulas defined in the GUI have been added. [docs/MID-DEMO.md](docs/MID-DEMO.md) has the mid-evaluation demo script and gap list (with which gaps are now closed), and [docs/WEEKLY-LOG.md](docs/WEEKLY-LOG.md) the change history.
+The full workflow above works end to end. Since the mid-evaluation, receiver orientation, receiver-frame angles, seeded measurement noise, a second localization formulation, side-by-side model comparison and formulas defined in the GUI have been added. [docs/FINAL-DEMO.md](docs/FINAL-DEMO.md) has the final demo script, verification evidence, requirement status and remaining gaps; [docs/MID-DEMO.md](docs/MID-DEMO.md) the mid-evaluation version, and [docs/WEEKLY-LOG.md](docs/WEEKLY-LOG.md) the change history.
 
 ## Contact
 
