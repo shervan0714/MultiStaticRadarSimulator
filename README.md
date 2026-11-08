@@ -41,6 +41,17 @@ To build the packages yourself:
 ./gradlew jpackageZip   # build/dist/MultiStaticRadarSimulator-windows.zip (run on Windows, JDK 17+ with jpackage)
 ```
 
+### Docker (command-line mode)
+
+The `Dockerfile` builds the project, runs all tests and starts the command-line pipeline (a container has no display for the GUI). `examples/default-scenario.properties` is the GUI's default scenario with 5 m range noise, seed 42, and the example formula:
+
+```bash
+docker build -t radar-sim .
+docker run --rm radar-sim --load examples/default-scenario.properties --compare
+```
+
+Expected mean errors: baseline 11.67 m, closed form 22.49 m, `Range + bias` formula 75.90 m (it assumes a 25 m bias the data does not have).
+
 ## Using the GUI
 
 1. **Configure** the transmitter, the receivers (use *Add receiver* and the `x` buttons; at least 3), each receiver's facing direction (**Az** in degrees anticlockwise from East, **El** in degrees above horizontal), the drone start position and velocity, the duration and time step, and optional **range noise σ** with a **random seed** (0 = noiseless; the same seed always reproduces the same run).
